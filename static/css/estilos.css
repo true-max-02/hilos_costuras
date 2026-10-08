@@ -195,6 +195,20 @@ body {
 .escena--foto .cabecera { border-bottom: 0; }
 .escena--foto .bajada { color: var(--texto); }
 
+/* En pantallas anchas el texto va a la izquierda y la foto se ve más a la derecha */
+@media (min-width: 721px) {
+  /* Velo fuerte detrás del texto que se aclara hacia la derecha */
+  .escena--foto::before {
+    background:
+      linear-gradient(180deg, transparent 75%, var(--fondo)),
+      linear-gradient(90deg, rgba(251, 248, 242, .94) 8%, rgba(251, 248, 242, .82) 38%, rgba(251, 248, 242, .2) 68%, rgba(251, 248, 242, .12)),
+      url("../img/portada.webp") center 40% / cover no-repeat;
+  }
+  .escena--foto .portada { text-align: left; padding-top: 88px; padding-bottom: 96px; }
+  .escena--foto .portada > * { margin-left: 0; max-width: 34rem; }
+  .escena--foto .acciones { justify-content: flex-start; }
+}
+
 .portada { text-align: center; padding: 72px 0 56px; }
 .antetitulo {
   margin: 0 0 8px;
