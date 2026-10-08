@@ -11,3 +11,6 @@ venv/
 
 # Notas locales
 CLAUDE.md
+
+# Skills del agente: se reinstalan con skills-lock.json
+.claude/
