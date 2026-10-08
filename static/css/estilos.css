@@ -428,6 +428,10 @@ body {
 .seccion { padding: 40px 0 64px; border-top: 1px solid var(--lino); scroll-margin-top: 24px; }
 /* La faja ya separa la portada de la primera sección */
 .escena--color + main > .seccion:first-child { border-top: 0; }
+/* Si la primera sección es de color, no lleva su propia faja: ya está la de la portada */
+.escena--color + main > .seccion--color:first-child::after { display: none; }
+/* Después de una sección de color, su pespunte hace de separación */
+.seccion--color + .seccion { border-top: 0; }
 
 /* Sección con el ambiente de color y una faja arriba */
 .seccion--color { position: relative; isolation: isolate; border-top: 0; padding: 64px 0 80px; }

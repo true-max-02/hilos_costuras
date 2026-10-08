@@ -10,7 +10,7 @@
   <h1>Tu ropa, como nueva</h1>
   <p class="bajada">
     Hacemos bastas, cambiamos cierres, ajustamos prendas y reparamos lo que se rompió.
-    Mira algunos trabajos y agenda el tuyo.
+    Pide tu hora aquí abajo y mira algunos de nuestros trabajos.
   </p>
   {# Cada servicio lleva al formulario con ese arreglo ya elegido #}
   <ul class="servicios">
@@ -22,40 +22,6 @@
 {% endblock %}
 
 {% block contenido %}
-<section class="seccion">
-  <h2 class="seccion__titulo">Antes y después</h2>
-  <p class="seccion__ayuda">Corre la cortina para ver la prenda arreglada.</p>
-
-  <div class="galeria">
-    {% for trabajo in trabajos %}
-      <figure class="trabajo">
-        <div class="cortina" data-cortina>
-          <div class="cortina__lado">
-            <img src="{{ url_for('static', filename=trabajo.foto_despues) }}"
-                 alt="Después: {{ trabajo.titulo }}" draggable="false">
-            <span class="cortina__etiqueta cortina__etiqueta--despues">Después</span>
-          </div>
-          <div class="cortina__lado cortina__lado--antes">
-            <img src="{{ url_for('static', filename=trabajo.foto_antes) }}"
-                 alt="Antes: {{ trabajo.titulo }}" draggable="false">
-            <span class="cortina__etiqueta cortina__etiqueta--antes">Antes</span>
-          </div>
-          <span class="cortina__barra" aria-hidden="true"></span>
-          <span class="cortina__tela" role="slider" tabindex="0"
-                aria-label="Cortina de {{ trabajo.titulo }}: corre para ver el después"
-                aria-valuemin="0" aria-valuemax="100" aria-valuenow="12"></span>
-        </div>
-        <figcaption>
-          <strong>{{ trabajo.titulo }}</strong>
-          <span>{{ trabajo.detalle }}</span>
-        </figcaption>
-      </figure>
-    {% else %}
-      <p class="galeria__vacia">Pronto vas a ver aquí nuestros trabajos.</p>
-    {% endfor %}
-  </div>
-</section>
-
 <section class="seccion seccion--color agenda" id="agendar">
   <h2 class="seccion__titulo">Agenda tu arreglo</h2>
   <p class="seccion__ayuda">Cuéntanos qué necesita tu prenda y elige cuándo traerla al taller.</p>
@@ -169,6 +135,40 @@
       </form>
     </div>
   {% endif %}
+</section>
+
+<section class="seccion">
+  <h2 class="seccion__titulo">Antes y después</h2>
+  <p class="seccion__ayuda">Corre la cortina para ver la prenda arreglada.</p>
+
+  <div class="galeria">
+    {% for trabajo in trabajos %}
+      <figure class="trabajo">
+        <div class="cortina" data-cortina>
+          <div class="cortina__lado">
+            <img src="{{ url_for('static', filename=trabajo.foto_despues) }}"
+                 alt="Después: {{ trabajo.titulo }}" draggable="false">
+            <span class="cortina__etiqueta cortina__etiqueta--despues">Después</span>
+          </div>
+          <div class="cortina__lado cortina__lado--antes">
+            <img src="{{ url_for('static', filename=trabajo.foto_antes) }}"
+                 alt="Antes: {{ trabajo.titulo }}" draggable="false">
+            <span class="cortina__etiqueta cortina__etiqueta--antes">Antes</span>
+          </div>
+          <span class="cortina__barra" aria-hidden="true"></span>
+          <span class="cortina__tela" role="slider" tabindex="0"
+                aria-label="Cortina de {{ trabajo.titulo }}: corre para ver el después"
+                aria-valuemin="0" aria-valuemax="100" aria-valuenow="12"></span>
+        </div>
+        <figcaption>
+          <strong>{{ trabajo.titulo }}</strong>
+          <span>{{ trabajo.detalle }}</span>
+        </figcaption>
+      </figure>
+    {% else %}
+      <p class="galeria__vacia">Pronto vas a ver aquí nuestros trabajos.</p>
+    {% endfor %}
+  </div>
 </section>
 {% endblock %}
 
