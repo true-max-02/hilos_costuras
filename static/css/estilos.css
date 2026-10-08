@@ -450,6 +450,7 @@ body {
   gap: 36px 28px;
 }
 .trabajo { margin: 0; }
+.galeria__vacia { grid-column: 1 / -1; margin: 0; color: var(--suave); text-align: center; }
 .trabajo figcaption { display: flex; flex-direction: column; gap: 2px; padding: 14px 4px 0; }
 .trabajo figcaption strong { font-family: "Fraunces", Georgia, serif; font-weight: 600; font-size: 1.15rem; }
 .trabajo figcaption span { color: var(--suave); font-size: .95rem; }

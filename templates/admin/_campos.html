@@ -1,0 +1,54 @@
+{# Campos de un trabajo, iguales al crear y al editar.
+   A la derecha, una cortina de prueba muestra cómo se verá en la página. #}
+{% macro campos_trabajo(titulo="", detalle="", foto_antes=None, foto_despues=None, obligatorias=True) %}
+<div class="trabajo-form">
+  <div class="trabajo-form__datos">
+    <label class="campo">
+      <span>Título</span>
+      <input name="titulo" value="{{ titulo }}" maxlength="80" required
+             placeholder="Ej.: Basta de pantalón">
+    </label>
+    <label class="campo">
+      <span>Detalle <small>(opcional)</small></span>
+      <textarea name="detalle" maxlength="300" rows="3"
+                placeholder="Ej.: Acortamos 6 cm y rehicimos la basta a tono.">{{ detalle }}</textarea>
+    </label>
+    <div class="fotos">
+      {% for campo, nombre in [("foto_antes", "Antes"), ("foto_despues", "Después")] %}
+        <label class="foto-campo">
+          <span class="foto-campo__nombre">Foto del {{ nombre|lower }}</span>
+          <input type="file" name="{{ campo }}" accept="image/jpeg,image/png,image/webp"
+                 data-vista="{{ campo }}" {% if obligatorias %}required{% endif %}>
+          <span class="foto-campo__boton">
+            {% if obligatorias %}Elegir foto{% else %}Cambiar foto{% endif %}
+          </span>
+          <span class="foto-campo__archivo" data-archivo="{{ campo }}">
+            {% if obligatorias %}Ninguna elegida{% else %}Se mantiene la actual{% endif %}
+          </span>
+        </label>
+      {% endfor %}
+    </div>
+    <p class="formulario__nota">JPG, PNG o WebP. Las fotos se recortan al centro en formato vertical (4:5)
+      y se les borran los datos ocultos, como la ubicación.</p>
+  </div>
+
+  <div class="trabajo-form__vista">
+    <p class="trabajo-form__vista-titulo">Así se verá</p>
+    <div class="cortina" data-cortina>
+      <div class="cortina__lado">
+        <img data-img="foto_despues" alt=""
+             {% if foto_despues %}src="{{ url_for('static', filename=foto_despues) }}"{% endif %} draggable="false">
+        <span class="cortina__etiqueta cortina__etiqueta--despues">Después</span>
+      </div>
+      <div class="cortina__lado cortina__lado--antes">
+        <img data-img="foto_antes" alt=""
+             {% if foto_antes %}src="{{ url_for('static', filename=foto_antes) }}"{% endif %} draggable="false">
+        <span class="cortina__etiqueta cortina__etiqueta--antes">Antes</span>
+      </div>
+      <span class="cortina__barra" aria-hidden="true"></span>
+      <span class="cortina__tela" role="slider" tabindex="0" aria-label="Cortina de prueba"
+            aria-valuemin="0" aria-valuemax="100" aria-valuenow="12"></span>
+    </div>
+  </div>
+</div>
+{% endmacro %}

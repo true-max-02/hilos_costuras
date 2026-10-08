@@ -1,0 +1,22 @@
+{% extends "admin/base_admin.html" %}
+
+{% block titulo %}Entrar{% endblock %}
+
+{% block contenido %}
+<section class="entrar">
+  <h1>Entrar al panel</h1>
+  <p class="entrar__ayuda">Desde aquí se suben los trabajos de antes y después.</p>
+  <form class="formulario" method="post">
+    <input type="hidden" name="csrf" value="{{ token_csrf() }}">
+    <label class="campo">
+      <span>Usuario</span>
+      <input name="usuario" autocomplete="username" required autofocus>
+    </label>
+    <label class="campo">
+      <span>Clave</span>
+      <input name="clave" type="password" autocomplete="current-password" required>
+    </label>
+    <button class="boton" type="submit">Entrar</button>
+  </form>
+</section>
+{% endblock %}

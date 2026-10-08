@@ -1,0 +1,59 @@
+{% extends "admin/base_admin.html" %}
+{% from "admin/_campos.html" import campos_trabajo %}
+
+{% block titulo %}Arreglos{% endblock %}
+
+{% block contenido %}
+<section class="bloque">
+  <h1 class="bloque__titulo">Nuevo trabajo de antes y después</h1>
+  <form class="formulario" method="post" action="{{ url_for('trabajo_nuevo') }}" enctype="multipart/form-data">
+    <input type="hidden" name="csrf" value="{{ token_csrf() }}">
+    {{ campos_trabajo(borrador.titulo if borrador else "", borrador.detalle if borrador else "") }}
+    <button class="boton" type="submit">Subir a la galería</button>
+  </form>
+</section>
+
+<section class="bloque">
+  <h2 class="bloque__titulo">En la galería <span class="bloque__cuenta">{{ trabajos|length }}</span></h2>
+  <p class="bloque__ayuda">Se muestran en este orden en la página de arreglos.</p>
+
+  {% if trabajos %}
+    <ol class="lista-trabajos">
+      {% for trabajo in trabajos %}
+        <li class="fila" id="trabajo-{{ trabajo.id }}">
+          <div class="fila__fotos">
+            <img src="{{ url_for('static', filename=trabajo.foto_antes) }}" alt="Antes" loading="lazy">
+            <img src="{{ url_for('static', filename=trabajo.foto_despues) }}" alt="Después" loading="lazy">
+          </div>
+          <div class="fila__texto">
+            <strong>{{ trabajo.titulo }}</strong>
+            <span>{{ trabajo.detalle }}</span>
+            {% if not trabajo.foto_antes.startswith("uploads/") %}<em class="fila__demo">Ilustración de muestra</em>{% endif %}
+          </div>
+          <div class="fila__acciones">
+            <form method="post" action="{{ url_for('trabajo_mover', id_trabajo=trabajo.id) }}">
+              <input type="hidden" name="csrf" value="{{ token_csrf() }}">
+              <button class="icono" name="hacia" value="arriba" title="Subir"
+                      aria-label="Subir {{ trabajo.titulo }}" {% if loop.first %}disabled{% endif %}>↑</button>
+              <button class="icono" name="hacia" value="abajo" title="Bajar"
+                      aria-label="Bajar {{ trabajo.titulo }}" {% if loop.last %}disabled{% endif %}>↓</button>
+            </form>
+            <a class="boton boton--claro boton--chico" href="{{ url_for('trabajo_editar', id_trabajo=trabajo.id) }}">Editar</a>
+            <form method="post" action="{{ url_for('trabajo_borrar', id_trabajo=trabajo.id) }}" data-confirmar="¿Borrar «{{ trabajo.titulo }}»? No se puede deshacer.">
+              <input type="hidden" name="csrf" value="{{ token_csrf() }}">
+              <button class="boton boton--peligro boton--chico" type="submit">Borrar</button>
+            </form>
+          </div>
+        </li>
+      {% endfor %}
+    </ol>
+  {% else %}
+    <p class="bloque__vacio">Todavía no hay trabajos. Sube el primero arriba.</p>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/cortina.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/admin.js') }}" defer></script>
+{% endblock %}

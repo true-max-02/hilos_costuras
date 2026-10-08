@@ -1,0 +1,24 @@
+{% extends "admin/base_admin.html" %}
+{% from "admin/_campos.html" import campos_trabajo %}
+
+{% block titulo %}Editar · {{ trabajo.titulo }}{% endblock %}
+
+{% block contenido %}
+<section class="bloque">
+  <a class="volver" href="{{ url_for('panel') }}">← Volver al panel</a>
+  <h1 class="bloque__titulo">Editar trabajo</h1>
+  <form class="formulario" method="post" enctype="multipart/form-data">
+    <input type="hidden" name="csrf" value="{{ token_csrf() }}">
+    {{ campos_trabajo(trabajo.titulo, trabajo.detalle, trabajo.foto_antes, trabajo.foto_despues, obligatorias=False) }}
+    <div class="formulario__botones">
+      <button class="boton" type="submit">Guardar cambios</button>
+      <a class="boton boton--claro" href="{{ url_for('panel') }}">Cancelar</a>
+    </div>
+  </form>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/cortina.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/admin.js') }}" defer></script>
+{% endblock %}

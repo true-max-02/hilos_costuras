@@ -1,16 +1,37 @@
+import hmac
 import os
 import secrets
 import sqlite3
+import time
+import warnings
 from contextlib import closing
+from functools import wraps
 
-from flask import Flask, g, render_template
+from flask import (Flask, abort, flash, g, redirect, render_template, request,
+                   session, url_for)
+from PIL import Image, ImageOps
 
 app = Flask(__name__)
 
 # La clave se lee del entorno. Si falta, se genera una temporal (solo sirve para desarrollo).
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+# Dos fotos de celular por formulario, con margen
+app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024
+
+# Acceso al panel. Para la demo queda admin / admin; en producción se define en el entorno.
+ADMIN_USUARIO = os.environ.get("ADMIN_USUARIO", "admin")
+ADMIN_CLAVE = os.environ.get("ADMIN_CLAVE", "admin")
 
 BD = os.path.join(app.root_path, "tienda.db")
+
+# Fotos subidas desde el panel (carpeta fuera de git)
+SUBIDAS = "uploads/trabajos"          # dentro de static/
+CARPETA_SUBIDAS = os.path.join(app.static_folder, *SUBIDAS.split("/"))
+FORMATOS_FOTO = {"JPEG", "PNG", "WEBP"}
+TAMANO_FOTO = (1200, 1500)            # 4:5, igual que la cortina
+Image.MAX_IMAGE_PIXELS = 50_000_000   # frena imágenes gigantes hechas para colgar el servidor
 
 ESQUEMA = """
 CREATE TABLE IF NOT EXISTS trabajos (
@@ -193,6 +214,228 @@ def inicio():
 def arreglos():
     trabajos = bd().execute("SELECT * FROM trabajos ORDER BY orden, id").fetchall()
     return render_template("arreglos.html", trabajos=trabajos)
+
+
+# ---------- Panel de administración ----------
+
+def token_csrf():
+    if "csrf" not in session:
+        session["csrf"] = secrets.token_urlsafe(32)
+    return session["csrf"]
+
+
+app.jinja_env.globals["token_csrf"] = token_csrf
+
+
+@app.before_request
+def revisar_csrf():
+    # Todo formulario que cambia algo debe traer el token de la sesión
+    if request.method == "POST":
+        if (request.content_length or 0) > app.config["MAX_CONTENT_LENGTH"]:
+            abort(413)
+        enviado = request.form.get("csrf", "")
+        if not hmac.compare_digest(enviado, session.get("csrf", "")):
+            # Pasa si la sesión venció o se reinició el servidor: se vuelve a intentar
+            flash("La sesión venció. Vuelve a intentarlo.")
+            return redirect(url_for("panel") if session.get("admin") else url_for("entrar"))
+
+
+def solo_admin(vista):
+    @wraps(vista)
+    def envuelta(*args, **kwargs):
+        if not session.get("admin"):
+            return redirect(url_for("entrar", siguiente=request.path))
+        return vista(*args, **kwargs)
+    return envuelta
+
+
+@app.route("/admin/entrar", methods=["GET", "POST"])
+def entrar():
+    if request.method == "POST":
+        usuario = request.form.get("usuario", "")
+        clave = request.form.get("clave", "")
+        # Se comparan los dos siempre, para no revelar cuál de los dos falló
+        bien_usuario = hmac.compare_digest(usuario.encode(), ADMIN_USUARIO.encode())
+        bien_clave = hmac.compare_digest(clave.encode(), ADMIN_CLAVE.encode())
+        if bien_usuario and bien_clave:
+            session.clear()   # sesión nueva al entrar
+            session["admin"] = True
+            siguiente = request.args.get("siguiente", "")
+            # Solo se vuelve a páginas del panel, nunca a otro sitio
+            if not siguiente.startswith("/admin"):
+                siguiente = url_for("panel")
+            return redirect(siguiente)
+        time.sleep(1)   # frena a quien intente adivinar la clave
+        flash("Usuario o clave incorrectos.")
+    return render_template("admin/entrar.html")
+
+
+@app.route("/admin/salir", methods=["POST"])
+def salir():
+    session.clear()
+    return redirect(url_for("entrar"))
+
+
+@app.errorhandler(413)
+def demasiado_grande(_error):
+    flash("Las fotos pesan demasiado: entre las dos deben sumar menos de 25 MB.")
+    return redirect(url_for("panel"))
+
+
+def guardar_foto(archivo):
+    """Revisa la foto, la endereza, la recorta a 4:5, le quita los datos ocultos
+    (ubicación GPS, modelo del celular...) y la guarda como WebP.
+    Devuelve la ruta dentro de static/ o lanza ValueError."""
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(archivo.stream) as imagen:
+                if imagen.format not in FORMATOS_FOTO:
+                    raise ValueError("Solo se aceptan fotos JPG, PNG o WebP.")
+                imagen = ImageOps.exif_transpose(imagen).convert("RGB")
+                imagen = ImageOps.fit(imagen, TAMANO_FOTO, Image.Resampling.LANCZOS)
+    except ValueError:
+        raise
+    except Exception:
+        raise ValueError("No se pudo leer una de las fotos. Prueba con un JPG, PNG o WebP.")
+    os.makedirs(CARPETA_SUBIDAS, exist_ok=True)
+    nombre = secrets.token_hex(12) + ".webp"
+    imagen.save(os.path.join(CARPETA_SUBIDAS, nombre), "WEBP", quality=82, method=6)
+    return f"{SUBIDAS}/{nombre}"
+
+
+def borrar_foto(ruta):
+    # Solo se borran fotos subidas; las ilustraciones de demo quedan
+    if ruta and ruta.startswith(SUBIDAS + "/"):
+        try:
+            os.remove(os.path.join(app.static_folder, *ruta.split("/")))
+        except FileNotFoundError:
+            pass
+        except OSError as error:
+            # En Windows un archivo abierto no se puede borrar; queda suelto pero no se cae nada
+            app.logger.warning("No se pudo borrar %s: %s", ruta, error)
+
+
+def leer_textos():
+    titulo = request.form.get("titulo", "").strip()
+    detalle = request.form.get("detalle", "").strip()
+    if not titulo:
+        raise ValueError("Falta el título del trabajo.")
+    if len(titulo) > 80 or len(detalle) > 300:
+        raise ValueError("El título va hasta 80 letras y el detalle hasta 300.")
+    return titulo, detalle
+
+
+def foto_enviada(campo):
+    archivo = request.files.get(campo)
+    return archivo if archivo and archivo.filename else None
+
+
+@app.route("/admin")
+@solo_admin
+def panel():
+    trabajos = bd().execute("SELECT * FROM trabajos ORDER BY orden, id").fetchall()
+    return render_template("admin/panel.html", trabajos=trabajos)
+
+
+@app.route("/admin/trabajos/nuevo", methods=["POST"])
+@solo_admin
+def trabajo_nuevo():
+    nuevas = []
+    try:
+        titulo, detalle = leer_textos()
+        antes, despues = foto_enviada("foto_antes"), foto_enviada("foto_despues")
+        if not antes or not despues:
+            raise ValueError("Sube las dos fotos: la del antes y la del después.")
+        nuevas.append(guardar_foto(antes))
+        nuevas.append(guardar_foto(despues))
+    except ValueError as error:
+        for ruta in nuevas:
+            borrar_foto(ruta)
+        flash(str(error))
+        return render_template("admin/panel.html", trabajos=bd().execute(
+            "SELECT * FROM trabajos ORDER BY orden, id").fetchall(),
+            borrador={"titulo": request.form.get("titulo", ""),
+                      "detalle": request.form.get("detalle", "")}), 400
+    conexion = bd()
+    # El trabajo nuevo queda primero en la galería
+    primero = conexion.execute("SELECT COALESCE(MIN(orden), 0) FROM trabajos").fetchone()[0]
+    conexion.execute(
+        "INSERT INTO trabajos (titulo, detalle, foto_antes, foto_despues, orden) VALUES (?, ?, ?, ?, ?)",
+        (titulo, detalle, nuevas[0], nuevas[1], primero - 1),
+    )
+    conexion.commit()
+    flash(f"Listo: «{titulo}» ya está en la galería de arreglos.")
+    return redirect(url_for("panel"))
+
+
+def trabajo_o_404(id_trabajo):
+    trabajo = bd().execute("SELECT * FROM trabajos WHERE id = ?", (id_trabajo,)).fetchone()
+    if trabajo is None:
+        abort(404)
+    return trabajo
+
+
+@app.route("/admin/trabajos/<int:id_trabajo>", methods=["GET", "POST"])
+@solo_admin
+def trabajo_editar(id_trabajo):
+    trabajo = trabajo_o_404(id_trabajo)
+    if request.method == "POST":
+        nuevas = {}
+        try:
+            titulo, detalle = leer_textos()
+            for campo in ("foto_antes", "foto_despues"):
+                archivo = foto_enviada(campo)
+                if archivo:
+                    nuevas[campo] = guardar_foto(archivo)
+        except ValueError as error:
+            for ruta in nuevas.values():
+                borrar_foto(ruta)
+            flash(str(error))
+            return render_template("admin/editar.html", trabajo=trabajo), 400
+        conexion = bd()
+        conexion.execute(
+            "UPDATE trabajos SET titulo = ?, detalle = ?, foto_antes = ?, foto_despues = ? WHERE id = ?",
+            (titulo, detalle, nuevas.get("foto_antes", trabajo["foto_antes"]),
+             nuevas.get("foto_despues", trabajo["foto_despues"]), id_trabajo),
+        )
+        conexion.commit()
+        # Las fotos reemplazadas ya no se usan
+        for campo in nuevas:
+            borrar_foto(trabajo[campo])
+        flash(f"Guardamos los cambios de «{titulo}».")
+        return redirect(url_for("panel"))
+    return render_template("admin/editar.html", trabajo=trabajo)
+
+
+@app.route("/admin/trabajos/<int:id_trabajo>/borrar", methods=["POST"])
+@solo_admin
+def trabajo_borrar(id_trabajo):
+    trabajo = trabajo_o_404(id_trabajo)
+    conexion = bd()
+    conexion.execute("DELETE FROM trabajos WHERE id = ?", (id_trabajo,))
+    conexion.commit()
+    borrar_foto(trabajo["foto_antes"])
+    borrar_foto(trabajo["foto_despues"])
+    flash(f"Borramos «{trabajo['titulo']}».")
+    return redirect(url_for("panel"))
+
+
+@app.route("/admin/trabajos/<int:id_trabajo>/mover", methods=["POST"])
+@solo_admin
+def trabajo_mover(id_trabajo):
+    trabajo_o_404(id_trabajo)
+    conexion = bd()
+    ids = [fila[0] for fila in conexion.execute("SELECT id FROM trabajos ORDER BY orden, id")]
+    pos = ids.index(id_trabajo)
+    otra = pos - 1 if request.form.get("hacia") == "arriba" else pos + 1
+    if 0 <= otra < len(ids):
+        ids[pos], ids[otra] = ids[otra], ids[pos]
+        # Se renumera todo para que el orden quede limpio
+        conexion.executemany("UPDATE trabajos SET orden = ? WHERE id = ?",
+                             [(orden, id_) for orden, id_ in enumerate(ids)])
+        conexion.commit()
+    return redirect(url_for("panel") + f"#trabajo-{id_trabajo}")
 
 
 

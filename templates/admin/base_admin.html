@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>{% block titulo %}Panel{% endblock %} · Hilos & Arreglos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body class="admin">
+  {# El panel es una mesa de trabajo: sin pilares, con la faja tejida arriba #}
+  <header class="admin__barra">
+    <a class="admin__marca" href="{{ url_for('panel') }}">Hilos &amp; Arreglos <span>· panel</span></a>
+    {% if session.admin %}
+      <nav class="admin__menu">
+        <a href="{{ url_for('arreglos') }}" target="_blank" rel="noopener">Ver la página de arreglos ↗</a>
+        <form method="post" action="{{ url_for('salir') }}">
+          <input type="hidden" name="csrf" value="{{ token_csrf() }}">
+          <button class="boton boton--claro boton--chico" type="submit">Salir</button>
+        </form>
+      </nav>
+    {% endif %}
+  </header>
+
+  <main class="admin__contenido">
+    {% with mensajes = get_flashed_messages() %}
+      {% for mensaje in mensajes %}
+        <p class="aviso" role="status">{{ mensaje }}</p>
+      {% endfor %}
+    {% endwith %}
+    {% block contenido %}{% endblock %}
+  </main>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>
