@@ -229,24 +229,93 @@ body {
 .boton--claro { background: transparent; color: var(--texto); }
 .boton--claro:hover { background: var(--lino); border-color: var(--texto); }
 
-.pasos {
+/* Recorrido: un hilo cosido que pasa por un botón de madera en cada etapa */
+.recorrido { position: relative; padding: 64px 0 88px; }
+.recorrido__titulo {
+  margin: 0 0 40px;
+  text-align: center;
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 400;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+}
+.recorrido__hilo {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  /* El centro de los botones (28px) queda sobre y = 30 del hilo */
+  margin-top: -2px;
+  overflow: visible;
+}
+.recorrido__hilo > path {
+  fill: none;
+  stroke: var(--azul);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 11 7;
+}
+.recorrido__avance {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 12;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 1.6s cubic-bezier(.45, 0, .2, 1);
+}
+.recorrido--espera .recorrido__avance { stroke-dashoffset: 1; }
+
+.recorrido__pasos {
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
-  padding-bottom: 72px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
-.paso {
-  padding: 26px 24px;
-  background: #fff;
-  border: 1px solid var(--lino);
-  border-radius: 6px;
+.puntada { text-align: center; }
+.puntada h3 {
+  margin: 18px 0 6px;
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
+  font-size: 1.3rem;
 }
-.paso h2 { margin: 14px 0 6px; font-family: "Fraunces", Georgia, serif; font-weight: 600; font-size: 1.25rem; }
-.paso p { margin: 0; color: var(--suave); }
-.paso__hilo { display: block; width: 44px; height: 3px; border-radius: 2px; }
-.paso__hilo--azul { background: var(--azul); }
-.paso__hilo--mostaza { background: var(--mostaza); }
-.paso__hilo--rojo { background: var(--rojo); }
+.puntada p { margin: 0 auto; max-width: 28ch; color: var(--suave); }
+
+/* Botón de madera de cuatro agujeros, cosido en cruz con el mismo hilo */
+.puntada__boton {
+  position: relative;
+  display: block;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 38% 38%, #5a3d22 0 3px, transparent 3.5px),
+    radial-gradient(circle at 62% 38%, #5a3d22 0 3px, transparent 3.5px),
+    radial-gradient(circle at 38% 62%, #5a3d22 0 3px, transparent 3.5px),
+    radial-gradient(circle at 62% 62%, #5a3d22 0 3px, transparent 3.5px),
+    radial-gradient(circle, transparent 0 17px, rgba(90, 61, 34, .35) 17.5px 18.5px, transparent 19px),
+    radial-gradient(circle at 35% 30%, #ecd3a4, #d2a86f 60%, #b88a52);
+  box-shadow: 0 3px 8px rgba(59, 42, 24, .28), inset 0 1px 1px rgba(255, 255, 255, .5);
+  transition: transform .5s cubic-bezier(.3, 1.5, .5, 1), opacity .4s ease;
+}
+.puntada__boton::before,
+.puntada__boton::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 19px;
+  height: 2.5px;
+  border-radius: 2px;
+  background: var(--azul);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.puntada__boton::after { transform: translate(-50%, -50%) rotate(-45deg); }
+.puntada:nth-child(2) .puntada__boton { transition-delay: .5s; }
+.puntada:nth-child(3) .puntada__boton { transition-delay: 1s; }
+.recorrido--espera .puntada__boton { transform: scale(.4); opacity: 0; }
 
 .pie {
   padding: 28px 0 40px;
@@ -414,10 +483,23 @@ body {
   .techo { --tabla-top: 18px; --tabla-alto: 58px; }
   .tabla__amarra { width: 14px; }
   .portada { padding: 44px 0 40px; }
+  /* El hilo baja por la izquierda y las etapas quedan una debajo de otra */
+  .recorrido__hilo { display: none; }
+  .recorrido__pasos {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding-left: 28px;
+    background: linear-gradient(var(--azul) 60%, transparent 0) 27px 0 / 2.5px 18px repeat-y;
+  }
+  .puntada { display: grid; grid-template-columns: 56px 1fr; column-gap: 16px; text-align: left; margin-left: -28px; }
+  .puntada__boton { grid-row: span 2; margin: 0; }
+  .puntada h3 { margin: 6px 0 4px; }
+  .puntada p { margin: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .colgante__pendulo { animation: none; }
   .cortina__tela { transition: none; }
   .menu a::after, .boton { transition: none; }
+  .recorrido__avance, .puntada__boton { transition: none; }
 }

@@ -19,21 +19,53 @@
 
 {% block contenido %}
 
-<section class="pasos">
-  <article class="paso">
-    <span class="paso__hilo paso__hilo--azul"></span>
-    <h2>Diseño</h2>
-    <p>Bocetos propios, pensados para durar y no para una temporada.</p>
-  </article>
-  <article class="paso">
-    <span class="paso__hilo paso__hilo--mostaza"></span>
-    <h2>Confección</h2>
-    <p>Cortamos y cosemos cada pieza en el local, en series cortas de lino y algodón.</p>
-  </article>
-  <article class="paso">
-    <span class="paso__hilo paso__hilo--rojo"></span>
-    <h2>Arreglos</h2>
-    <p>Ajustes, bastas, cierres y reparaciones para que tu ropa dure más.</p>
-  </article>
+<section class="recorrido" aria-labelledby="recorrido-titulo">
+  <h2 class="recorrido__titulo" id="recorrido-titulo">Así trabajamos</h2>
+
+  {# Un hilo cosido pasa por el centro de cada botón (x = 167, 500 y 833, y = 30) #}
+  <svg class="recorrido__hilo" viewBox="0 0 1000 60" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <mask id="hilo-avance" maskUnits="userSpaceOnUse">
+        <path class="recorrido__avance" pathLength="1"
+              d="M0 40 C60 40 110 30 167 30 S270 44 333 44 S440 30 500 30 S610 16 667 16 S780 30 833 30 S950 22 1000 22"/>
+      </mask>
+    </defs>
+    <path mask="url(#hilo-avance)" vector-effect="non-scaling-stroke"
+          d="M0 40 C60 40 110 30 167 30 S270 44 333 44 S440 30 500 30 S610 16 667 16 S780 30 833 30 S950 22 1000 22"/>
+  </svg>
+
+  <ol class="recorrido__pasos">
+    <li class="puntada">
+      <span class="puntada__boton" aria-hidden="true"></span>
+      <h3>Diseño</h3>
+      <p>Bocetos propios, pensados para durar y no para una temporada.</p>
+    </li>
+    <li class="puntada">
+      <span class="puntada__boton" aria-hidden="true"></span>
+      <h3>Confección</h3>
+      <p>Cortamos y cosemos cada pieza en el local, en series cortas de lino y algodón.</p>
+    </li>
+    <li class="puntada">
+      <span class="puntada__boton" aria-hidden="true"></span>
+      <h3>Arreglos</h3>
+      <p>Ajustes, bastas, cierres y reparaciones para que tu ropa dure más.</p>
+    </li>
+  </ol>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // El hilo se cose y los botones aparecen al llegar a la sección (una sola vez)
+  (() => {
+    const recorrido = document.querySelector(".recorrido");
+    if (!recorrido || !("IntersectionObserver" in window)) return;
+    recorrido.classList.add("recorrido--espera");
+    new IntersectionObserver((entradas, observador) => {
+      if (!entradas[0].isIntersecting) return;
+      recorrido.classList.remove("recorrido--espera");
+      observador.disconnect();
+    }, { threshold: 0.35 }).observe(recorrido);
+  })();
+</script>
 {% endblock %}
