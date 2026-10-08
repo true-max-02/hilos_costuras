@@ -20,6 +20,8 @@
   {{ pilar("der") }}
 
   <div class="sitio">
+    {# Escena: menú + portada; en inicio lleva la foto del taller de fondo #}
+    <div class="escena{% block escena_clase %}{% endblock %}">
     <header class="cabecera">
       <nav class="menu">
         <a href="{{ url_for('inicio') }}">Inicio</a>
@@ -29,6 +31,8 @@
         <a href="#">Carrito</a>
       </nav>
     </header>
+    {% block portada %}{% endblock %}
+    </div>
 
     <main>
       {% block contenido %}{% endblock %}

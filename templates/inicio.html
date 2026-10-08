@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 
-{% block contenido %}
+{% block escena_clase %} escena--foto{% endblock %}
+
+{% block portada %}
 <section class="portada">
   <p class="antetitulo">Taller de diseño y arreglos</p>
   <h1>Diseñamos, cosemos y arreglamos tu ropa</h1>
@@ -13,6 +15,9 @@
     <a class="boton boton--claro" href="{{ url_for('arreglos') }}#agendar">Pedir un arreglo</a>
   </div>
 </section>
+{% endblock %}
+
+{% block contenido %}
 
 <section class="pasos">
   <article class="paso">

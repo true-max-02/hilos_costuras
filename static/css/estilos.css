@@ -139,10 +139,13 @@ body {
 /* ---------- Sitio ---------- */
 
 .sitio {
-  margin: 0 calc(var(--pilar) + 32px);
-  padding-top: 188px;
+  --margen: 32px;
+  --arriba: 188px;
+  margin: 0 calc(var(--pilar) + var(--margen));
+  padding-top: var(--arriba);
 }
-.sitio > * { max-width: 1080px; margin-left: auto; margin-right: auto; }
+.sitio > *, .escena > * { max-width: 1080px; margin-left: auto; margin-right: auto; }
+.sitio > .escena { max-width: none; }
 
 .cabecera {
   display: flex;
@@ -173,6 +176,24 @@ body {
 .menu a:focus-visible::after { transform: scaleX(1); }
 
 /* ---------- Inicio ---------- */
+
+/* Foto del taller detrás de la tabla, el menú y la portada, de pilar a pilar */
+.escena--foto { position: relative; isolation: isolate; }
+.escena--foto::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: calc(var(--arriba) * -1);
+  bottom: 0;
+  left: calc((var(--pilar) / 2 + var(--margen)) * -1);
+  right: calc((var(--pilar) / 2 + var(--margen)) * -1);
+  background:
+    linear-gradient(180deg, transparent 75%, var(--fondo)),
+    radial-gradient(ellipse 60% 55% at 50% 62%, rgba(251, 248, 242, .88), rgba(251, 248, 242, .5)),
+    url("../img/portada.webp") center 40% / cover no-repeat;
+}
+.escena--foto .cabecera { border-bottom: 0; }
+.escena--foto .bajada { color: var(--texto); }
 
 .portada { text-align: center; padding: 72px 0 56px; }
 .antetitulo {
@@ -389,7 +410,7 @@ body {
 
 @media (max-width: 720px) {
   :root { --pilar: 18px; }
-  .sitio { margin: 0 calc(var(--pilar) + 14px); padding-top: 150px; }
+  .sitio { --margen: 14px; --arriba: 150px; }
   .techo { --tabla-top: 18px; --tabla-alto: 58px; }
   .tabla__amarra { width: 14px; }
   .portada { padding: 44px 0 40px; }
