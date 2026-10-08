@@ -1,4 +1,5 @@
-// Pilares 3D: cilindros de madera envueltos en lana, con ovillos y hebras colgando.
+// Pilares 3D: carretes de hilo con tapas de madera, envueltos en lana, cintas y retazos,
+// con ovillos y hebras colgando.
 // Giran apenas solos y un poco más al bajar por la página.
 // Si WebGL falla, queda el SVG de respaldo que ya está en la página.
 import * as THREE from "three";
@@ -10,10 +11,9 @@ const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const RADIO = 1;
 const SVG_A_MUNDO = 0.02;
 const PX_POR_UNIDAD = 82;                         // resolución de la textura
-const SVG_A_PX = SVG_A_MUNDO * PX_POR_UNIDAD;
 const TEX_ANCHO = 512;                            // ≈ 2πR × 82, una vuelta completa
-const TEX_ALTO = 2304;
-const ALTO_TEXTURA = TEX_ALTO / PX_POR_UNIDAD;    // unidades de mundo que cubre la textura
+const TEX_ALTO_MAX = 4096;                        // tope de alto de la textura del cuerpo
+const RELIEVE = 0.14;                             // cuánto sobresale lo más alto del relieve
 const MEDIO_ANCHO_VISTA = 1.3;                    // medio ancho del pilar en pantalla (el cilindro mide 1)
 const AIRE = 30;                                  // px extra hacia el contenido, para que no se corten los ovillos
 
@@ -27,74 +27,304 @@ function azar(semilla) {
   };
 }
 
-// Dibuja una línea en la textura repitiéndola a ambos lados, para que cierre la vuelta sin costura
-function lineaEnVuelta(g, x1, y1, x2, y2) {
-  for (const dx of [-TEX_ANCHO, 0, TEX_ANCHO]) {
+// ---------- Textura del carrete ----------
+// Se pinta para el alto real del cuerpo (entre las tapas), así nada se estira.
+
+const VUELTA = 7;     // grosor en px de cada vuelta de lana
+
+// Trama de tela: líneas finas cruzadas
+function trama(g, x, y, w, h, tono, paso = 4) {
+  g.fillStyle = tono;
+  for (let v = y; v < y + h; v += paso) g.fillRect(x, v, w, 1);
+  for (let u = x; u < x + w; u += paso) g.fillRect(u, y, 1, h);
+}
+
+// Reparte el alto entre las bandas según su peso: [inicio, alto, lana]
+function repartir(bandas, y, h) {
+  const total = bandas.reduce((t, [peso]) => t + peso, 0);
+  let inicio = y;
+  return bandas.map(([peso, lana]) => {
+    const alto = (h * peso) / total;
+    inicio += alto;
+    return [inicio - alto, alto, lana];
+  });
+}
+
+// Puntada recta alrededor de un rectángulo
+function pespunte(g, x, y, w, h, color) {
+  g.save();
+  g.strokeStyle = color;
+  g.lineWidth = 1.6;
+  g.setLineDash([6, 5]);
+  g.strokeRect(x + 5, y + 5, w - 10, h - 10);
+  g.restore();
+}
+
+// Un pintor por cada tipo de columna de "carrete" (ver PILARES en main.py)
+const pintores = {
+  // Vueltas de lana apiladas en bandas; cada vuelta es una hebra torcida
+  lana(g, x, y, w, h, bandas, r) {
+    for (const [inicio, alto, lana] of repartir(bandas, y, h)) {
+      const [color, sombra] = lanas[lana];
+      g.fillStyle = color;
+      g.fillRect(x, inicio, w, alto);
+      for (let v = inicio; v < inicio + alto; v += VUELTA) {
+        // Torsión: trazos en diagonal, oscuros y claros, a lo largo de la vuelta
+        const corrido = r() * 4;
+        for (const [tono, dx, grosor] of [[sombra, 0, 1.6], ["rgba(255, 255, 255, .3)", 1.8, 0.9]]) {
+          g.strokeStyle = tono;
+          g.lineWidth = grosor;
+          g.beginPath();
+          for (let u = x - VUELTA + corrido + dx; u < x + w; u += 3.6) {
+            g.moveTo(u, v + VUELTA);
+            g.lineTo(u + VUELTA * 0.8, v);
+          }
+          g.stroke();
+        }
+        // Surco entre vueltas
+        g.fillStyle = "rgba(40, 25, 10, .35)";
+        g.fillRect(x, v + VUELTA - 1, w, 1);
+      }
+      // Sombra en los bordes de la banda: se ve redondeada, como un rollo
+      const borde = g.createLinearGradient(0, inicio, 0, inicio + alto);
+      borde.addColorStop(0, "rgba(40, 25, 10, .45)");
+      borde.addColorStop(0.18, "rgba(40, 25, 10, 0)");
+      borde.addColorStop(0.45, "rgba(255, 255, 255, .08)");
+      borde.addColorStop(0.82, "rgba(40, 25, 10, 0)");
+      borde.addColorStop(1, "rgba(40, 25, 10, .5)");
+      g.fillStyle = borde;
+      g.fillRect(x, inicio, w, alto);
+    }
+  },
+
+  // Cinta tejida vertical, con bordes y una cadena de rombos
+  cinta(g, x, y, w, h, [fondo, borde, rombo]) {
+    g.fillStyle = lanas[fondo][0];
+    g.fillRect(x, y, w, h);
+    trama(g, x, y, w, h, "rgba(90, 60, 30, .10)", 3);
+    g.fillStyle = lanas[borde][0];
+    for (const [dx, ancho] of [[2, 4], [9, 2], [w - 6, 4], [w - 11, 2]]) g.fillRect(x + dx, y, ancho, h);
+    const cx = x + w / 2;
+    const mitad = w * 0.3;
+    const alto = w * 0.75;
+    for (let v = y; v < y + h; v += alto) {
+      const cy = v + alto / 2;
+      for (const [escala, color] of [[0.95, borde], [0.6, rombo], [0.25, fondo]]) {
+        g.beginPath();
+        g.moveTo(cx, cy - (alto / 2) * escala);
+        g.lineTo(cx + mitad * escala, cy);
+        g.lineTo(cx, cy + (alto / 2) * escala);
+        g.lineTo(cx - mitad * escala, cy);
+        g.closePath();
+        g.fillStyle = lanas[color][0];
+        g.fill();
+      }
+    }
+  },
+
+  // Franjas verticales tejidas
+  rayas(g, x, y, w, h, colores) {
+    const ancho = w / colores.length;
+    colores.forEach((lana, i) => {
+      const [color, sombra] = lanas[lana];
+      const u = x + i * ancho;
+      g.fillStyle = color;
+      g.fillRect(u, y, ancho, h);
+      g.fillStyle = sombra;
+      for (let v = y; v < y + h; v += 3) g.fillRect(u, v, ancho, 1);
+      g.fillStyle = "rgba(255, 255, 255, .25)";
+      g.fillRect(u + 1, y, 1.5, h);
+    });
+  },
+
+  // Tela cosida encima, con su pespunte
+  retazo(g, x, y, w, h, lana) {
+    const [color, sombra] = lanas[lana];
+    g.fillStyle = color;
+    g.fillRect(x, y, w, h);
+    trama(g, x, y, w, h, "rgba(60, 40, 20, .13)");
+    pespunte(g, x, y, w, h, lana === "crudo" ? lanas.rojo[0] : lanas.crudo[0]);
+    g.fillStyle = sombra;
+    g.fillRect(x, y, 2, h);
+  },
+
+  // Retazos pequeños en cuadros, de a dos por fila
+  cuadros(g, x, y, w, h, colores) {
+    const lado = w / 2;
+    let i = 0;
+    for (let v = y; v < y + h; v += lado, i++) {
+      for (let u = 0; u < 2; u++, i++) {
+        const lana = colores[i % colores.length];
+        const alto = Math.min(lado, y + h - v);
+        g.fillStyle = lanas[lana][0];
+        g.fillRect(x + u * lado, v, lado, alto);
+        trama(g, x + u * lado, v, lado, alto, "rgba(60, 40, 20, .12)");
+        pespunte(g, x + u * lado, v, lado, alto, lana === "crudo" ? lanas.azul[1] : lanas.crudo[0]);
+      }
+    }
+  },
+
+  // Faja tejida que da toda la vuelta: bordes, franjas y zigzag
+  faja(g, x, y, w, h, [borde, fondo, dibujo]) {
+    g.fillStyle = lanas[fondo][0];
+    g.fillRect(x, y, w, h);
+    trama(g, x, y, w, h, "rgba(90, 60, 30, .10)", 3);
+    g.fillStyle = lanas[borde][0];
+    g.fillRect(x, y, w, h * 0.16);
+    g.fillRect(x, y + h * 0.84, w, h * 0.16);
+    g.fillStyle = lanas[dibujo][0];
+    g.fillRect(x, y + h * 0.22, w, h * 0.06);
+    g.fillRect(x, y + h * 0.72, w, h * 0.06);
+    // El paso divide la vuelta en partes iguales, para que el zigzag cierre sin costura
+    const paso = w / Math.round(w / (h * 0.5));
+    g.strokeStyle = lanas[borde][1];
+    g.lineWidth = h * 0.08;
     g.beginPath();
-    g.moveTo(x1 + dx, y1);
-    g.lineTo(x2 + dx, y2);
+    for (let i = 0; i * paso <= w; i++) g.lineTo(x + i * paso, y + h * (i % 2 ? 0.38 : 0.62));
+    g.stroke();
+  },
+};
+
+// ---------- Relieve ----------
+// Mapa en grises del mismo tamaño que la textura: blanco sobresale, negro queda hundido.
+// Lo usa el cilindro para abultarse (desplazamiento) y para su sombreado (bump).
+
+const gris = (n) => `rgb(${n}, ${n}, ${n})`;
+
+// Bulto redondeado de arriba hacia abajo, de `base` en los bordes a `cima` al centro
+function bulto(a, x, y, w, h, base, cima) {
+  const degradado = a.createLinearGradient(0, y, 0, y + h);
+  for (const t of [0, 0.1, 0.25, 0.5, 0.75, 0.9, 1]) {
+    degradado.addColorStop(t, gris(Math.round(base + (cima - base) * Math.sin(t * Math.PI))));
+  }
+  a.fillStyle = degradado;
+  a.fillRect(x, y, w, h);
+}
+
+const relieves = {
+  lana(a, x, y, w, h, bandas) {
+    for (const [inicio, alto] of repartir(bandas, y, h)) {
+      bulto(a, x, inicio, w, alto, 90, 255);
+      // Surcos entre vueltas, para que el bump marque cada hebra
+      a.fillStyle = "rgba(0, 0, 0, .18)";
+      for (let v = inicio; v < inicio + alto; v += VUELTA) a.fillRect(x, v + VUELTA - 1.5, w, 1.5);
+    }
+  },
+  cinta(a, x, y, w, h) { a.fillStyle = gris(70); a.fillRect(x, y, w, h); },
+  rayas(a, x, y, w, h) { a.fillStyle = gris(55); a.fillRect(x, y, w, h); },
+  retazo(a, x, y, w, h) {
+    a.fillStyle = gris(85); a.fillRect(x, y, w, h);
+    a.fillStyle = gris(60); a.fillRect(x, y, 3, h);
+  },
+  cuadros(a, x, y, w, h) { a.fillStyle = gris(80); a.fillRect(x, y, w, h); },
+  faja(a, x, y, w, h) { bulto(a, x, y, w, h, 110, 190); },
+};
+
+// Cordón torcido junto a cada tapa
+function cordon(g, y, alto) {
+  g.fillStyle = lanas.crudo[1];
+  g.fillRect(0, y, TEX_ANCHO, alto);
+  g.strokeStyle = lanas.crudo[0];
+  g.lineWidth = alto * 0.35;
+  for (let x = 0; x < TEX_ANCHO + alto; x += TEX_ANCHO / 64) {
+    g.beginPath();
+    g.moveTo(x - alto * 0.7, y + alto);
+    g.lineTo(x, y);
     g.stroke();
   }
 }
 
-function texturaPilar(datos, lado) {
+function lienzo2d(alto) {
   const lienzo = document.createElement("canvas");
   lienzo.width = TEX_ANCHO;
-  lienzo.height = TEX_ALTO;
-  const g = lienzo.getContext("2d");
+  lienzo.height = alto;
+  return lienzo.getContext("2d");
+}
+
+// Devuelve dos texturas del mismo tamaño: el color y el relieve
+function texturaCarrete(tramos, lado, altoPx) {
+  const g = lienzo2d(altoPx);
+  const a = lienzo2d(altoPx);
   const r = azar(lado === "izq" ? 7 : 13);
 
-  // Madera con veta vertical
-  g.fillStyle = "#e0c393";
-  g.fillRect(0, 0, TEX_ANCHO, TEX_ALTO);
-  for (let i = 0; i < 70; i++) {
-    const x = r() * TEX_ANCHO;
-    g.strokeStyle = `rgba(150, 110, 62, ${0.06 + r() * 0.12})`;
-    g.lineWidth = 0.6 + r() * 1.8;
+  const borde = 12;   // alto de cada cordón
+  const util = altoPx - borde * 2;
+  const total = tramos.reduce((t, [peso]) => t + peso, 0);
+  let y = borde;
+  for (const [peso, columnas] of tramos) {
+    const alto = (util * peso) / total;
+    let x = 0;
+    for (const [parte, tipo, colores] of columnas) {
+      const ancho = TEX_ANCHO * parte;
+      for (const [c, pintar] of [[g, pintores[tipo]], [a, relieves[tipo]]]) {
+        c.save();
+        c.beginPath();
+        c.rect(x, y, ancho, alto);
+        c.clip();
+        pintar(c, x, y, ancho, alto, colores, r);
+        c.restore();
+      }
+      // Sombra entre columnas, para que se vean como piezas distintas
+      const sombra = g.createLinearGradient(x + ancho - 8, 0, x + ancho, 0);
+      sombra.addColorStop(0, "rgba(40, 25, 10, 0)");
+      sombra.addColorStop(1, "rgba(40, 25, 10, .4)");
+      g.fillStyle = sombra;
+      g.fillRect(x + ancho - 8, y, 8, alto);
+      x += ancho;
+    }
+    g.fillStyle = "rgba(40, 25, 10, .4)";
+    g.fillRect(0, y + alto - 2, TEX_ANCHO, 2);
+    y += alto;
+  }
+  for (const y0 of [0, altoPx - borde]) {
+    cordon(g, y0, borde);
+    bulto(a, 0, y0, TEX_ANCHO, borde, 80, 200);
+  }
+
+  return [g, a].map((c, i) => {
+    const textura = new THREE.CanvasTexture(c.canvas);
+    if (i === 0) textura.colorSpace = THREE.SRGBColorSpace;
+    textura.wrapS = THREE.RepeatWrapping;
+    return textura;
+  });
+}
+
+// ---------- Tapas de madera ----------
+
+const TAPA_ALTO = 0.5;
+const TAPA_RADIO = 1.27;
+
+function texturaMadera() {
+  const lienzo = document.createElement("canvas");
+  lienzo.width = 256;
+  lienzo.height = 64;
+  const g = lienzo.getContext("2d");
+  const r = azar(5);
+  g.fillStyle = "#c99b63";
+  g.fillRect(0, 0, 256, 64);
+  for (let i = 0; i < 40; i++) {
+    g.strokeStyle = `rgba(120, 80, 40, ${0.08 + r() * 0.18})`;
+    g.lineWidth = 0.5 + r() * 1.5;
+    const y = r() * 64;
     g.beginPath();
-    g.moveTo(x, 0);
-    for (let y = 0; y <= TEX_ALTO; y += 160) g.lineTo(x + Math.sin(y * 0.004 + i) * 4, y);
+    g.moveTo(0, y);
+    for (let x = 0; x <= 256; x += 16) g.lineTo(x, y + Math.sin(x * 0.03 + i) * 2);
     g.stroke();
   }
-
-  // Vueltas de lana: anillos rectos, para que los bordes de cada banda queden parejos
-  g.lineCap = "round";
-  for (const [y0, n, sep, lana] of datos.bandas) {
-    const [color, sombra] = lanas[lana];
-    const paso = sep * SVG_A_PX;
-    for (let i = 0; i < n; i++) {
-      const y = (y0 + i * sep) * SVG_A_PX;
-      g.fillStyle = sombra;
-      g.fillRect(0, y - paso * 0.52, TEX_ANCHO, paso * 1.04);
-      g.fillStyle = i % 3 === 0 ? sombra : color;
-      g.fillRect(0, y - paso * 0.36, TEX_ANCHO, paso * 0.72);
-      g.fillStyle = "rgba(255, 255, 255, .22)";
-      g.fillRect(0, y - paso * 0.25, TEX_ANCHO, paso * 0.2);
-      // Fibras más oscuras sueltas: al girar el pilar se ve que dan la vuelta
-      g.fillStyle = sombra;
-      for (let k = 0; k < 5; k++) g.fillRect(r() * TEX_ANCHO, y - paso * 0.3, 10 + r() * 40, paso * 0.4);
-    }
-  }
-
-  // Hebras sueltas en diagonal: al girar el pilar se nota que dan la vuelta
-  const nombres = Object.keys(lanas);
-  const fin = Math.max(...datos.bandas.map(([y0, n, sep]) => y0 + n * sep)) * SVG_A_PX;
-  for (let i = 0; i < 7; i++) {
-    const [color, sombra] = lanas[nombres[Math.floor(r() * nombres.length)]];
-    const x = r() * TEX_ANCHO;
-    const y = 60 + r() * (fin - 300);
-    const caida = (180 + r() * 160) * (r() < 0.5 ? 1 : -1);
-    g.strokeStyle = sombra; g.lineWidth = 4;
-    lineaEnVuelta(g, x, y, x + TEX_ANCHO * 0.5, y + Math.abs(caida));
-    g.strokeStyle = color; g.lineWidth = 2.6;
-    lineaEnVuelta(g, x, y, x + TEX_ANCHO * 0.5, y + Math.abs(caida));
-  }
-
   const textura = new THREE.CanvasTexture(lienzo);
   textura.colorSpace = THREE.SRGBColorSpace;
   textura.wrapS = THREE.RepeatWrapping;
-  textura.wrapT = THREE.ClampToEdgeWrapping;   // abajo se estira la madera lisa
   return textura;
+}
+
+// Disco con el borde redondeado, girado alrededor del eje del pilar
+function crearTapa(material) {
+  const m = TAPA_ALTO / 2;
+  const perfil = [
+    [0, -m], [TAPA_RADIO - 0.12, -m], [TAPA_RADIO - 0.04, -m + 0.04], [TAPA_RADIO, -m + 0.12],
+    [TAPA_RADIO, m - 0.12], [TAPA_RADIO - 0.04, m - 0.04], [TAPA_RADIO - 0.12, m], [0, m],
+  ].map(([x, y]) => new THREE.Vector2(x, y));
+  return new THREE.Mesh(new THREE.LatheGeometry(perfil, 64), material);
 }
 
 function texturaOvillo(lana) {
@@ -169,13 +399,16 @@ function crearPilar(contenedor) {
   const giro = new THREE.Group();
   escena.add(giro);
 
-  const textura = texturaPilar(datos, lado);
-  textura.anisotropy = renderer.capabilities.getMaxAnisotropy();
-  const madera = new THREE.MeshStandardMaterial({
-    map: textura, bumpMap: textura, bumpScale: 2.5, roughness: 0.85,
-  });
-  const cilindro = new THREE.Mesh(new THREE.BufferGeometry(), madera);
+  // Cuerpo del carrete; la textura se pinta en ajustar(), según el alto de la ventana
+  // El relieve abulta las bandas de lana hasta RELIEVE por encima del radio base
+  const tela = new THREE.MeshStandardMaterial({ bumpScale: 3, roughness: 0.88, displacementScale: RELIEVE });
+  const cilindro = new THREE.Mesh(new THREE.BufferGeometry(), tela);
   giro.add(cilindro);
+
+  const maderaTapa = new THREE.MeshStandardMaterial({ map: texturaMadera(), roughness: 0.6 });
+  const tapaArriba = crearTapa(maderaTapa);
+  const tapaAbajo = crearTapa(maderaTapa);
+  giro.add(tapaArriba, tapaAbajo);
 
   // Ovillos pegados a la superficie, en ángulos distintos
   const ovillos = datos.ovillos.map(([y, lana], i) => {
@@ -215,13 +448,27 @@ function crearPilar(contenedor) {
     });
     camara.updateProjectionMatrix();
 
-    // El cilindro llena todo el alto de la ventana; la textura se apoya arriba
-    const largo = Math.max(ALTO_TEXTURA, medioAlto * 2 + 0.5);
+    // Una tapa arriba y otra abajo de la ventana; el cuerpo llena el espacio entre ellas
+    const margen = 0.05;
+    tapaArriba.position.y = medioAlto - margen - TAPA_ALTO / 2;
+    tapaAbajo.position.y = -tapaArriba.position.y;
+    const largo = medioAlto * 2 - (margen + TAPA_ALTO) * 2;
     cilindro.geometry.dispose();
-    cilindro.geometry = new THREE.CylinderGeometry(RADIO, RADIO, largo, 96, 1, true);
-    cilindro.position.y = medioAlto - largo / 2;
-    textura.repeat.y = largo / ALTO_TEXTURA;
-    textura.offset.y = 1 - textura.repeat.y;
+    const altoPx = Math.min(TEX_ALTO_MAX, Math.round(largo * PX_POR_UNIDAD));
+    // Muchos segmentos a lo alto, para que el desplazamiento dibuje cada banda
+    const base = RADIO - RELIEVE * 0.45;
+    cilindro.geometry = new THREE.CylinderGeometry(base, base, largo, 128, Math.ceil(altoPx / 3), true);
+
+    // La textura se vuelve a pintar solo si cambió el alto
+    if (tela.map?.image.height !== altoPx) {
+      tela.map?.dispose();
+      tela.bumpMap?.dispose();
+      const [color, relieve] = texturaCarrete(datos.carrete, lado, altoPx);
+      color.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      tela.map = color;
+      tela.bumpMap = tela.displacementMap = relieve;
+      tela.needsUpdate = true;
+    }
 
     for (const objeto of [...ovillos, ...colgantes]) {
       objeto.position.y = medioAlto - objeto.userData.ySvg * SVG_A_MUNDO;

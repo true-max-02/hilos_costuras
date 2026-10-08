@@ -68,11 +68,17 @@ LANAS = {
     "azul": ("#3d6aa3", "#2b5186"),
     "mostaza": ("#d6a53c", "#b8892b"),
     "rojo": ("#b2452f", "#8e3423"),
+    "cafe": ("#8a5a36", "#6b4428"),
 }
 
 # Vueltas de lana de cada pilar: (y inicial, vueltas, separación, lana).
 # Las medidas usan el SVG del pilar (100 de ancho por 1400 de alto).
 # Las usan el SVG de respaldo (_pilares.html) y el 3D (static/js/pilares3d.js).
+# "carrete" es el diseño del pilar 3D como carrete de hilo, de arriba hacia abajo:
+# tramos (peso del alto, columnas); cada columna es (parte de la vuelta, tipo, colores).
+# Tipos: lana (vueltas de lana: [(peso, lana)]), cinta (cinta tejida con rombos),
+# rayas (franjas verticales), retazo (tela cosida), cuadros (retazos en cuadros)
+# y faja (cinta que da toda la vuelta).
 PILARES = {
     "izq": {
         "inclinacion": 9,
@@ -83,6 +89,22 @@ PILARES = {
             (590, 10, 3.2, "azul"), (660, 6, 3.4, "crudo"),
         ],
         "ovillos": [(304, "mostaza"), (560, "azul")],
+        "carrete": [
+            (3, [(1, "lana", [(1, "crudo")])]),
+            (40, [
+                (0.42, "lana", [(1, "azul"), (1.1, "rojo"), (1, "mostaza"), (0.9, "crudo")]),
+                (0.2, "cinta", ["crudo", "azul", "rojo"]),
+                (0.14, "retazo", "rojo"),
+                (0.24, "rayas", ["crudo", "mostaza", "azul", "crudo"]),
+            ]),
+            (7, [(1, "faja", ["rojo", "crudo", "azul"])]),
+            (47, [
+                (0.42, "lana", [(1, "mostaza"), (1, "crudo"), (0.7, "mostaza"), (1.2, "cafe")]),
+                (0.24, "rayas", ["azul", "crudo", "mostaza", "rojo"]),
+                (0.34, "retazo", "crudo"),
+            ]),
+            (3, [(1, "lana", [(1, "crudo")])]),
+        ],
     },
     "der": {
         "inclinacion": -9,
@@ -93,6 +115,28 @@ PILARES = {
             (552, 18, 3.2, "crudo"), (624, 12, 3.2, "azul"),
         ],
         "ovillos": [(230, "azul"), (480, "rojo")],
+        "carrete": [
+            (3, [(1, "lana", [(1, "crudo")])]),
+            (24, [
+                (0.45, "lana", [(1, "azul"), (1, "rojo"), (1, "mostaza"), (0.7, "crudo")]),
+                (0.17, "rayas", ["crudo", "azul", "mostaza"]),
+                (0.38, "lana", [(1.2, "rojo"), (1, "mostaza"), (0.8, "azul")]),
+            ]),
+            (20, [
+                (0.22, "retazo", "crudo"),
+                (0.3, "rayas", ["rojo", "mostaza", "azul", "crudo", "rojo"]),
+                (0.24, "retazo", "mostaza"),
+                (0.24, "cuadros", ["rojo", "azul", "mostaza", "crudo"]),
+            ]),
+            (6, [(1, "faja", ["azul", "crudo", "rojo"])]),
+            (12, [(0.5, "retazo", "cafe"), (0.5, "cinta", ["crudo", "rojo", "azul"])]),
+            (32, [
+                (0.3, "rayas", ["mostaza", "azul", "rojo", "crudo"]),
+                (0.32, "lana", [(1, "rojo"), (1, "mostaza"), (1, "rojo")]),
+                (0.38, "rayas", ["azul", "crudo", "rojo", "mostaza", "azul"]),
+            ]),
+            (3, [(1, "lana", [(1, "rojo")])]),
+        ],
     },
 }
 
