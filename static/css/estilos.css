@@ -410,17 +410,20 @@ body {
   padding: 0;
   list-style: none;
 }
-/* Cada servicio es un parche cosido del color de una lana */
+/* Cada servicio es un parche cosido del color de una lana; lleva a la agenda */
 .servicios li {
-  padding: 6px 16px;
   border: 1.5px dashed var(--azul);
   border-radius: 999px;
   background: #dfe7f1;
   font-size: .9rem;
+  transition: transform .2s ease;
 }
 .servicios li:nth-child(2) { border-color: #b8892b; background: #f6e5ba; }
 .servicios li:nth-child(3) { border-color: var(--rojo); background: #f3d6ca; }
 .servicios li:nth-child(4) { border-color: #8a5a36; background: var(--crudo); }
+.servicios a { display: block; padding: 6px 16px; color: inherit; text-decoration: none; }
+.servicios li:hover { transform: translateY(-2px); }
+.servicios a:focus-visible { outline: 3px solid var(--azul); outline-offset: 3px; border-radius: 999px; }
 
 .seccion { padding: 40px 0 64px; border-top: 1px solid var(--lino); scroll-margin-top: 24px; }
 /* La faja ya separa la portada de la primera sección */
@@ -561,6 +564,165 @@ body {
 @media (max-width: 720px) {
   .galeria { grid-template-columns: 1fr; }
   .cortina__tela { width: 54px; }
+}
+
+/* ---------- Agenda: pedir hora con una ficha de taller ---------- */
+
+.agenda__cuerpo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.9fr);
+  gap: 40px;
+  align-items: start;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+/* Pasos numerados con botones de madera, como en "Así trabajamos" */
+.agenda__pasos { display: grid; gap: 20px; margin: 8px 0 0; padding: 0; list-style: none; counter-reset: paso; }
+.agenda__pasos li { display: grid; grid-template-columns: 40px 1fr; column-gap: 14px; counter-increment: paso; }
+.agenda__pasos li::before {
+  content: counter(paso);
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ecd3a4, #d2a86f 60%, #b88a52);
+  box-shadow: 0 2px 6px rgba(59, 42, 24, .28), inset 0 1px 1px rgba(255, 255, 255, .5);
+  color: #4a311a;
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
+}
+.agenda__pasos strong { font-family: "Fraunces", Georgia, serif; font-weight: 600; font-size: 1.05rem; }
+.agenda__pasos span { color: var(--suave); font-size: .93rem; }
+.agenda__horario {
+  margin: 28px 0 0;
+  padding: 12px 16px;
+  border: 1.5px dashed rgba(90, 55, 20, .4);
+  border-radius: 8px;
+  background: rgba(255, 253, 248, .55);
+  font-size: .92rem;
+}
+
+/* La ficha: papel de taller con una huincha de medir arriba y un pespunte por dentro */
+.ficha {
+  position: relative;
+  padding: 46px 32px 30px;
+  border-radius: 10px;
+  background: var(--trama), #fffdf8;
+  box-shadow: 0 14px 34px rgba(59, 42, 24, .18), 0 2px 6px rgba(59, 42, 24, .12);
+}
+.ficha::before {
+  content: "";
+  position: absolute;
+  inset: 30px 10px 10px;
+  border: 1.5px dashed rgba(122, 82, 40, .35);
+  border-radius: 6px;
+  pointer-events: none;
+}
+.ficha::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  border-radius: 10px 10px 0 0;
+  background:
+    repeating-linear-gradient(90deg, rgba(43, 32, 20, .75) 0 1px, transparent 1px 40px) 0 0 / 100% 11px no-repeat,
+    repeating-linear-gradient(90deg, rgba(43, 32, 20, .5) 0 1px, transparent 1px 8px) 0 0 / 100% 6px no-repeat,
+    linear-gradient(180deg, #f8dc7c, #e8bb4c);
+  box-shadow: inset 0 -1px 0 rgba(107, 80, 20, .35);
+}
+
+.ficha__campos { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 18px 20px; }
+.ficha__ancho { grid-column: 1 / -1; }
+.ficha__campo { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.ficha__grupo { min-width: 0; margin: 0; padding: 0; border: 0; }
+.ficha__etiqueta,
+.ficha__grupo legend { padding: 0; font-weight: 500; font-size: .95rem; }
+.ficha__grupo legend { margin-bottom: 8px; }
+.ficha__etiqueta small { color: var(--suave); font-weight: 400; }
+.ficha input:not([type="radio"]),
+.ficha textarea {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid #d3c5ab;
+  border-radius: 8px;
+  background: #fffefb;
+  color: var(--texto);
+  font: inherit;
+}
+.ficha textarea { resize: vertical; min-height: 92px; }
+.ficha input:focus-visible,
+.ficha textarea:focus-visible { outline: 3px solid var(--azul); outline-offset: 1px; }
+.ficha [aria-invalid="true"] { border-color: var(--rojo); background: #fdf3ef; }
+.ficha__grupo--error legend,
+.ficha__error { color: #9a3522; }
+.ficha__error { display: block; margin-top: 2px; font-size: .86rem; }
+.ficha__aviso {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1.5px dashed var(--rojo);
+  border-radius: 8px;
+  background: #fbe9e3;
+  color: #7a2a1b;
+}
+.ficha__pie { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 4px; }
+.ficha__pie .boton { cursor: pointer; font: inherit; font-weight: 500; }
+.ficha__nota { flex: 1 1 220px; margin: 0; color: var(--suave); font-size: .88rem; }
+/* Fuera de la vista: solo lo llenan los robots */
+.ficha__trampa { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+/* Opciones como parches: punteados mientras no se eligen, rellenos al elegirlos */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { --c: var(--texto); --c-fondo: #fffdf8; --c-texto: #fff; position: relative; }
+.chip input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.chip span {
+  display: inline-block;
+  padding: 7px 15px;
+  border: 1.5px dashed var(--c);
+  border-radius: 999px;
+  background: var(--c-fondo);
+  font-size: .92rem;
+  transition: background .15s ease, color .15s ease;
+}
+.chip small { opacity: .8; font-size: .8rem; }
+.chip input:checked + span { border-style: solid; background: var(--c); color: var(--c-texto); }
+.chip input:checked + span::before { content: "✓ "; }
+.chip input:focus-visible + span { outline: 3px solid var(--azul); outline-offset: 2px; }
+.chip--basta { --c: var(--azul); --c-fondo: #dfe7f1; }
+.chip--cierre { --c: var(--mostaza); --c-fondo: #f6e5ba; --c-texto: var(--texto); }
+.chip--ajuste { --c: var(--rojo); --c-fondo: #f3d6ca; }
+.chip--reparacion { --c: #8a5a36; --c-fondo: var(--crudo); }
+.chip--otro { --c: #6b5e4e; }
+
+/* Ficha timbrada después de enviar */
+.ficha--lista { max-width: 640px; margin: 0 auto; padding: 58px 32px 40px; text-align: center; }
+.ficha__sello {
+  display: inline-block;
+  margin: 0 0 14px;
+  padding: 5px 16px;
+  border: 2.5px solid var(--rojo);
+  border-radius: 6px;
+  color: var(--rojo);
+  font-size: .85rem;
+  font-weight: 700;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  transform: rotate(-6deg);
+}
+.ficha--lista h3 { margin: 0 0 8px; font-family: "Fraunces", Georgia, serif; font-weight: 600; font-size: 1.6rem; }
+.ficha--lista p:not(.ficha__sello) { margin: 0 auto 24px; max-width: 46ch; }
+
+@media (max-width: 860px) {
+  .agenda__cuerpo { grid-template-columns: 1fr; gap: 28px; }
+}
+@media (max-width: 560px) {
+  .ficha { padding: 42px 18px 24px; }
+  .ficha__campos { grid-template-columns: 1fr; }
 }
 
 /* ---------- Colección ---------- */
@@ -723,4 +885,6 @@ body {
   .menu a::after, .boton { transition: none; }
   .recorrido__avance, .puntada__boton { transition: none; }
   .prenda__foto img, .prenda__foto::after { transition: none; }
+  .servicios li, .chip span { transition: none; }
+  .servicios li:hover { transform: none; }
 }

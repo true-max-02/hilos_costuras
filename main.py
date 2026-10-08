@@ -5,6 +5,7 @@ import sqlite3
 import time
 import warnings
 from contextlib import closing
+from datetime import date, timedelta
 from functools import wraps
 
 from flask import (Flask, abort, flash, g, redirect, render_template, request,
@@ -55,6 +56,19 @@ CREATE TABLE IF NOT EXISTS prendas (
     visible INTEGER NOT NULL DEFAULT 1,
     orden INTEGER NOT NULL DEFAULT 0   -- la primera es la destacada
 );
+
+CREATE TABLE IF NOT EXISTS reservas (
+    id INTEGER PRIMARY KEY,
+    nombre TEXT NOT NULL,
+    telefono TEXT NOT NULL,         -- solo dígitos, con código de país: 56912345678
+    correo TEXT NOT NULL DEFAULT '',
+    servicio TEXT NOT NULL,         -- clave de SERVICIOS
+    detalle TEXT NOT NULL,
+    fecha TEXT NOT NULL,            -- AAAA-MM-DD
+    franja TEXT NOT NULL,           -- clave de FRANJAS
+    estado TEXT NOT NULL DEFAULT 'nueva',   -- clave de ESTADOS
+    creada TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+);
 """
 
 # Trabajos de muestra para la demo; se cambian por fotos reales desde el panel
@@ -82,6 +96,42 @@ PRENDAS_DEMO = [
      34990, "demo/coleccion/falda-terracota.webp", "XS,S,M,L", 5),
 ]
 
+# Agenda de arreglos: lo que se puede pedir, cuándo, y cómo avanza cada reserva
+SERVICIOS = {
+    "basta": "Basta",
+    "cierre": "Cambio de cierre",
+    "ajuste": "Ajuste",
+    "reparacion": "Reparación",
+    "otro": "Otro arreglo",
+}
+FRANJAS = {"manana": ("Mañana", "10 a 13 h"), "tarde": ("Tarde", "15 a 19 h")}
+ESTADOS = {"nueva": "Nueva", "confirmada": "Confirmada", "lista": "Lista para retirar"}
+# Desde cada estado, el botón que la hace avanzar: (estado siguiente, texto del botón)
+AVANCE = {"nueva": ("confirmada", "Confirmar hora"), "confirmada": ("lista", "Marcar lista")}
+DIAS_PARA_RESERVAR = 60
+DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+         "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
+
+
+def reservas_demo():
+    """Reservas de muestra para que el panel no parta vacío en la demo.
+    Las fechas se cuentan desde hoy y nunca caen en domingo."""
+    hoy = date.today()
+
+    def dia(n):
+        fecha = hoy + timedelta(days=n)
+        return (fecha + timedelta(days=1) if fecha.weekday() == 6 else fecha).isoformat()
+
+    return [
+        ("Javiera Muñoz", "56900000001", "", "basta",
+         "Jeans negros, acortar unos 4 cm. Los uso con zapatillas.", dia(1), "manana", "nueva"),
+        ("Tomás Reyes", "56900000002", "tomas.reyes@example.com", "cierre",
+         "Chaqueta de cuero con el cierre separado abajo.", dia(2), "tarde", "confirmada"),
+        ("Carmen Soto", "56900000003", "", "ajuste",
+         "Vestido de fiesta: entallar la cintura y subir un poco los tirantes.", dia(4), "manana", "nueva"),
+    ]
+
 
 def preparar_bd():
     with closing(sqlite3.connect(BD)) as conexion, conexion:
@@ -96,6 +146,12 @@ def preparar_bd():
                 "INSERT INTO prendas (nombre, slug, descripcion, precio, foto, tallas, stock, orden)"
                 " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                 [(*prenda, orden) for orden, prenda in enumerate(PRENDAS_DEMO)],
+            )
+        if not conexion.execute("SELECT 1 FROM reservas LIMIT 1").fetchone():
+            conexion.executemany(
+                "INSERT INTO reservas (nombre, telefono, correo, servicio, detalle, fecha, franja, estado)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                reservas_demo(),
             )
 
 
@@ -210,10 +266,139 @@ def inicio():
     return render_template("inicio.html")
 
 
+@app.template_filter("fecha_larga")
+def fecha_larga(texto):
+    """2026-10-15 -> jueves 15 de octubre"""
+    fecha = date.fromisoformat(texto)
+    return f"{DIAS[fecha.weekday()]} {fecha.day} de {MESES[fecha.month - 1]}"
+
+
+@app.template_filter("fecha_corta")
+def fecha_corta(texto):
+    """2026-10-15 -> jue 15 oct"""
+    fecha = date.fromisoformat(texto)
+    return f"{DIAS[fecha.weekday()][:3]} {fecha.day} {MESES[fecha.month - 1][:3]}"
+
+
+@app.template_filter("telefono")
+def telefono(digitos):
+    """56912345678 -> +56 9 1234 5678"""
+    if len(digitos) == 11 and digitos.startswith("569"):
+        return f"+56 9 {digitos[3:7]} {digitos[7:]}"
+    return "+" + digitos
+
+
+app.jinja_env.globals.update(servicios=SERVICIOS, franjas=FRANJAS, estados=ESTADOS, avance=AVANCE)
+
+
+def pagina_arreglos(**extra):
+    trabajos = bd().execute("SELECT * FROM trabajos ORDER BY orden, id").fetchall()
+    hoy = date.today()
+    extra.setdefault("datos", {})
+    extra.setdefault("errores", {})
+    return render_template(
+        "arreglos.html", trabajos=trabajos,
+        fecha_min=(hoy + timedelta(days=1)).isoformat(),
+        fecha_max=(hoy + timedelta(days=DIAS_PARA_RESERVAR)).isoformat(),
+        **extra,
+    )
+
+
 @app.route("/arreglos")
 def arreglos():
-    trabajos = bd().execute("SELECT * FROM trabajos ORDER BY orden, id").fetchall()
-    return render_template("arreglos.html", trabajos=trabajos)
+    # Recién agendada: se muestra la ficha de confirmación en vez del formulario
+    reserva = None
+    if "reserva_hecha" in session:
+        reserva = bd().execute("SELECT * FROM reservas WHERE id = ?",
+                               (session.pop("reserva_hecha"),)).fetchone()
+    # Los servicios de la portada llegan con el arreglo ya elegido (?servicio=basta)
+    return pagina_arreglos(reserva=reserva, datos={"servicio": request.args.get("servicio", "")})
+
+
+def limpiar_telefono(texto):
+    """Deja solo los dígitos, con código de país. Acepta "9 1234 5678", "+56 9 1234 5678"..."""
+    digitos = "".join(c for c in texto if c.isdigit())
+    if len(digitos) == 9 and digitos.startswith("9"):
+        digitos = "56" + digitos
+    elif len(digitos) == 8:
+        digitos = "569" + digitos
+    if not 10 <= len(digitos) <= 15:
+        raise ValueError
+    return digitos
+
+
+def correo_valido(correo):
+    """Revisión simple: algo@dominio.algo, sin espacios."""
+    usuario, arroba, dominio = correo.rpartition("@")
+    return (bool(usuario and arroba) and "@" not in usuario and "." in dominio.strip(".")
+            and len(correo) <= 120 and not any(c.isspace() for c in correo))
+
+
+def error_fecha(texto):
+    """Devuelve qué tiene de malo el día elegido, o None si sirve."""
+    try:
+        fecha = date.fromisoformat(texto)
+    except ValueError:
+        return "Elige el día en que traerás la prenda."
+    hoy = date.today()
+    if fecha <= hoy:
+        return "Elige un día a partir de mañana."
+    if fecha > hoy + timedelta(days=DIAS_PARA_RESERVAR):
+        return f"Por ahora se puede pedir hora hasta {DIAS_PARA_RESERVAR} días adelante."
+    if fecha.weekday() == 6:
+        return "Los domingos el taller está cerrado; elige otro día."
+    return None
+
+
+def leer_reserva(formulario):
+    """Revisa el formulario de la agenda. Devuelve (datos, errores por campo)."""
+    datos = {campo: formulario.get(campo, "").strip()
+             for campo in ("nombre", "telefono", "correo", "servicio", "detalle", "fecha", "franja")}
+    errores = {}
+    if not datos["nombre"]:
+        errores["nombre"] = "Escribe tu nombre."
+    elif len(datos["nombre"]) > 80:
+        errores["nombre"] = "El nombre va hasta 80 letras."
+    try:
+        datos["telefono_limpio"] = limpiar_telefono(datos["telefono"])
+    except ValueError:
+        # Espacios que no se cortan, para que el ejemplo no quede partido en dos líneas
+        errores["telefono"] = "Revisa el número; por ejemplo: +56 9 1234 5678."
+    if datos["correo"] and not correo_valido(datos["correo"]):
+        errores["correo"] = "Revisa el correo, o déjalo en blanco."
+    if datos["servicio"] not in SERVICIOS:
+        errores["servicio"] = "Elige qué arreglo necesitas."
+    if not datos["detalle"]:
+        errores["detalle"] = "Cuéntanos qué necesita tu prenda."
+    elif len(datos["detalle"]) > 500:
+        errores["detalle"] = "Resúmelo en 500 letras como máximo."
+    if mensaje := error_fecha(datos["fecha"]):
+        errores["fecha"] = mensaje
+    if datos["franja"] not in FRANJAS:
+        errores["franja"] = "Elige mañana o tarde."
+    return datos, errores
+
+
+@app.route("/arreglos/agendar", methods=["GET", "POST"])
+def agendar():
+    if request.method == "GET":
+        return redirect(url_for("arreglos", _anchor="agendar"))
+    # Trampa para robots: un campo escondido que una persona nunca llena
+    if request.form.get("sitio_web"):
+        return redirect(url_for("arreglos", _anchor="agendar"))
+    datos, errores = leer_reserva(request.form)
+    if errores:
+        return pagina_arreglos(datos=datos, errores=errores), 400
+    conexion = bd()
+    cursor = conexion.execute(
+        "INSERT INTO reservas (nombre, telefono, correo, servicio, detalle, fecha, franja)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (datos["nombre"], datos["telefono_limpio"], datos["correo"], datos["servicio"],
+         datos["detalle"], datos["fecha"], datos["franja"]),
+    )
+    conexion.commit()
+    session["reserva_hecha"] = cursor.lastrowid
+    return redirect(url_for("arreglos", _anchor="agendar"))
 
 
 # ---------- Panel de administración ----------
@@ -236,6 +421,10 @@ def revisar_csrf():
         enviado = request.form.get("csrf", "")
         if not hmac.compare_digest(enviado, session.get("csrf", "")):
             # Pasa si la sesión venció o se reinició el servidor: se vuelve a intentar
+            if request.endpoint == "agendar":
+                # Al cliente se le devuelve su formulario lleno, con un token nuevo
+                return pagina_arreglos(datos=request.form, errores={
+                    "general": "La página llevaba mucho rato abierta. Revisa tus datos y envía de nuevo."}), 400
             flash("La sesión venció. Vuelve a intentarlo.")
             return redirect(url_for("panel") if session.get("admin") else url_for("entrar"))
 
@@ -436,6 +625,56 @@ def trabajo_mover(id_trabajo):
                              [(orden, id_) for orden, id_ in enumerate(ids)])
         conexion.commit()
     return redirect(url_for("panel") + f"#trabajo-{id_trabajo}")
+
+
+# Reservas que llegan desde "Agenda tu arreglo"
+
+def reservas_nuevas():
+    return bd().execute("SELECT COUNT(*) FROM reservas WHERE estado = 'nueva'").fetchone()[0]
+
+
+app.jinja_env.globals["reservas_nuevas"] = reservas_nuevas
+
+
+def reserva_o_404(id_reserva):
+    reserva = bd().execute("SELECT * FROM reservas WHERE id = ?", (id_reserva,)).fetchone()
+    if reserva is None:
+        abort(404)
+    return reserva
+
+
+@app.route("/admin/reservas")
+@solo_admin
+def reservas():
+    # Por fecha y horario; las que ya están listas para retirar van al final
+    filas = bd().execute(
+        "SELECT * FROM reservas ORDER BY estado = 'lista', fecha, franja, id"
+    ).fetchall()
+    return render_template("admin/reservas.html", reservas=filas)
+
+
+@app.route("/admin/reservas/<int:id_reserva>/estado", methods=["POST"])
+@solo_admin
+def reserva_estado(id_reserva):
+    reserva = reserva_o_404(id_reserva)
+    estado = request.form.get("estado", "")
+    if estado in ESTADOS:
+        conexion = bd()
+        conexion.execute("UPDATE reservas SET estado = ? WHERE id = ?", (estado, id_reserva))
+        conexion.commit()
+        flash(f"La reserva de {reserva['nombre']} quedó como «{ESTADOS[estado].lower()}».")
+    return redirect(url_for("reservas") + f"#reserva-{id_reserva}")
+
+
+@app.route("/admin/reservas/<int:id_reserva>/borrar", methods=["POST"])
+@solo_admin
+def reserva_borrar(id_reserva):
+    reserva = reserva_o_404(id_reserva)
+    conexion = bd()
+    conexion.execute("DELETE FROM reservas WHERE id = ?", (id_reserva,))
+    conexion.commit()
+    flash(f"Borramos la reserva de {reserva['nombre']}.")
+    return redirect(url_for("reservas"))
 
 
 

@@ -12,8 +12,11 @@
     Hacemos bastas, cambiamos cierres, ajustamos prendas y reparamos lo que se rompió.
     Mira algunos trabajos y agenda el tuyo.
   </p>
+  {# Cada servicio lleva al formulario con ese arreglo ya elegido #}
   <ul class="servicios">
-    <li>Bastas</li><li>Cierres</li><li>Ajustes</li><li>Reparaciones</li>
+    {% for valor, nombre in [("basta", "Bastas"), ("cierre", "Cierres"), ("ajuste", "Ajustes"), ("reparacion", "Reparaciones")] %}
+      <li><a href="{{ url_for('arreglos', servicio=valor, _anchor='agendar') }}">{{ nombre }}</a></li>
+    {% endfor %}
   </ul>
 </section>
 {% endblock %}
@@ -53,9 +56,119 @@
   </div>
 </section>
 
-<section class="seccion seccion--color" id="agendar">
+<section class="seccion seccion--color agenda" id="agendar">
   <h2 class="seccion__titulo">Agenda tu arreglo</h2>
-  <p class="seccion__ayuda">Muy pronto podrás reservar tu hora desde aquí.</p>
+  <p class="seccion__ayuda">Cuéntanos qué necesita tu prenda y elige cuándo traerla al taller.</p>
+
+  {% if reserva %}
+    {# Recién enviada: la ficha queda timbrada #}
+    <div class="ficha ficha--lista" role="status">
+      <p class="ficha__sello">Recibido</p>
+      <h3>¡Gracias, {{ reserva.nombre.split()[0] }}!</h3>
+      <p>
+        Tu hora quedó pedida para el <strong>{{ reserva.fecha|fecha_larga }}</strong>, en la
+        {{ franjas[reserva.franja][0]|lower }} ({{ franjas[reserva.franja][1] }}).
+        Te escribiremos al <strong>{{ reserva.telefono|telefono }}</strong> para confirmarla.
+      </p>
+      <a class="boton boton--claro" href="{{ url_for('arreglos', _anchor='agendar') }}">Agendar otro arreglo</a>
+    </div>
+  {% else %}
+    <div class="agenda__cuerpo">
+      <div class="agenda__info">
+        <ol class="agenda__pasos">
+          <li><strong>Cuéntanos qué necesita</strong><span>La prenda y el arreglo, con tus palabras.</span></li>
+          <li><strong>Elige día y horario</strong><span>De lunes a sábado, en la mañana o en la tarde.</span></li>
+          <li><strong>Te confirmamos por WhatsApp</strong><span>Y traes la prenda al taller el día acordado.</span></li>
+        </ol>
+        <p class="agenda__horario"><strong>Horario del taller</strong><br>Lunes a sábado · 10 a 13 h y 15 a 19 h</p>
+      </div>
+
+      {# Ficha de taller: los datos se revisan también en el servidor (leer_reserva en main.py) #}
+      <form class="ficha" method="post" action="{{ url_for('agendar') }}#agendar">
+        <input type="hidden" name="csrf" value="{{ token_csrf() }}">
+        <div class="ficha__campos">
+          {% if errores %}
+            <p class="ficha__aviso" role="alert">{{ errores.general or "Revisa los campos marcados en rojo." }}</p>
+          {% endif %}
+
+          <fieldset class="ficha__grupo ficha__ancho{% if errores.servicio %} ficha__grupo--error{% endif %}">
+            <legend>¿Qué arreglo necesitas?</legend>
+            <div class="chips">
+              {% for valor, nombre in servicios.items() %}
+                <label class="chip chip--{{ valor }}">
+                  <input type="radio" name="servicio" value="{{ valor }}" required
+                         {% if datos.servicio == valor %}checked{% endif %}>
+                  <span>{{ nombre }}</span>
+                </label>
+              {% endfor %}
+            </div>
+            {% if errores.servicio %}<span class="ficha__error">{{ errores.servicio }}</span>{% endif %}
+          </fieldset>
+
+          <label class="ficha__campo ficha__ancho">
+            <span class="ficha__etiqueta">Cuéntanos de tu prenda</span>
+            <textarea name="detalle" rows="3" maxlength="500" required
+                      placeholder="Ej.: Jeans negros, acortar unos 4 cm. Los uso con zapatillas."
+                      {% if errores.detalle %}aria-invalid="true" aria-describedby="error-detalle"{% endif %}>{{ datos.detalle }}</textarea>
+            {% if errores.detalle %}<span class="ficha__error" id="error-detalle">{{ errores.detalle }}</span>{% endif %}
+          </label>
+
+          <label class="ficha__campo">
+            <span class="ficha__etiqueta">¿Qué día la traes?</span>
+            <input type="date" name="fecha" value="{{ datos.fecha }}" min="{{ fecha_min }}" max="{{ fecha_max }}" required
+                   {% if errores.fecha %}aria-invalid="true" aria-describedby="error-fecha"{% endif %}>
+            {% if errores.fecha %}<span class="ficha__error" id="error-fecha">{{ errores.fecha }}</span>{% endif %}
+          </label>
+
+          <fieldset class="ficha__grupo{% if errores.franja %} ficha__grupo--error{% endif %}">
+            <legend>¿En qué horario?</legend>
+            <div class="chips">
+              {% for valor, franja in franjas.items() %}
+                <label class="chip chip--hora">
+                  <input type="radio" name="franja" value="{{ valor }}" required
+                         {% if datos.franja == valor %}checked{% endif %}>
+                  <span>{{ franja[0] }} <small>{{ franja[1] }}</small></span>
+                </label>
+              {% endfor %}
+            </div>
+            {% if errores.franja %}<span class="ficha__error">{{ errores.franja }}</span>{% endif %}
+          </fieldset>
+
+          <label class="ficha__campo">
+            <span class="ficha__etiqueta">Tu nombre</span>
+            <input name="nombre" value="{{ datos.nombre }}" maxlength="80" autocomplete="name" required
+                   {% if errores.nombre %}aria-invalid="true" aria-describedby="error-nombre"{% endif %}>
+            {% if errores.nombre %}<span class="ficha__error" id="error-nombre">{{ errores.nombre }}</span>{% endif %}
+          </label>
+
+          <label class="ficha__campo">
+            <span class="ficha__etiqueta">WhatsApp</span>
+            <input type="tel" name="telefono" value="{{ datos.telefono }}" maxlength="20" autocomplete="tel"
+                   placeholder="+56 9 1234 5678" required
+                   {% if errores.telefono %}aria-invalid="true" aria-describedby="error-telefono"{% endif %}>
+            {% if errores.telefono %}<span class="ficha__error" id="error-telefono">{{ errores.telefono }}</span>{% endif %}
+          </label>
+
+          <label class="ficha__campo ficha__ancho">
+            <span class="ficha__etiqueta">Correo <small>(opcional)</small></span>
+            <input type="email" name="correo" value="{{ datos.correo }}" maxlength="120" autocomplete="email"
+                   {% if errores.correo %}aria-invalid="true" aria-describedby="error-correo"{% endif %}>
+            {% if errores.correo %}<span class="ficha__error" id="error-correo">{{ errores.correo }}</span>{% endif %}
+          </label>
+
+          {# Trampa para robots: una persona no ve este campo y lo deja vacío #}
+          <div class="ficha__trampa" aria-hidden="true">
+            <label>No llenar <input name="sitio_web" tabindex="-1" autocomplete="off"></label>
+          </div>
+
+          <div class="ficha__pie">
+            <button class="boton" type="submit">Pedir mi hora</button>
+            <p class="ficha__nota">El valor del arreglo lo conversamos al ver la prenda.</p>
+          </div>
+        </div>
+      </form>
+    </div>
+  {% endif %}
 </section>
 {% endblock %}
 

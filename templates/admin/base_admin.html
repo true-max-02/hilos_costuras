@@ -17,6 +17,10 @@
     <a class="admin__marca" href="{{ url_for('panel') }}">Hilos &amp; Arreglos <span>· panel</span></a>
     {% if session.admin %}
       <nav class="admin__menu">
+        <a href="{{ url_for('panel') }}" {% if request.endpoint in ('panel', 'trabajo_editar') %}aria-current="page"{% endif %}>Trabajos</a>
+        <a href="{{ url_for('reservas') }}" {% if request.endpoint == 'reservas' %}aria-current="page"{% endif %}>
+          Reservas{% set nuevas = reservas_nuevas() %}{% if nuevas %} <span class="bloque__cuenta" title="Reservas nuevas">{{ nuevas }}</span>{% endif %}
+        </a>
         <a href="{{ url_for('arreglos') }}" target="_blank" rel="noopener">Ver la página de arreglos ↗</a>
         <form method="post" action="{{ url_for('salir') }}">
           <input type="hidden" name="csrf" value="{{ token_csrf() }}">

@@ -1,0 +1,60 @@
+{% extends "admin/base_admin.html" %}
+
+{% block titulo %}Reservas{% endblock %}
+
+{% block contenido %}
+<section class="bloque">
+  <h1 class="bloque__titulo">Reservas de arreglos <span class="bloque__cuenta">{{ reservas|length }}</span></h1>
+  <p class="bloque__ayuda">Llegan desde "Agenda tu arreglo". Escríbele a cada persona por WhatsApp para confirmar la hora.</p>
+
+  {% if reservas %}
+    <ol class="lista-reservas">
+      {% for reserva in reservas %}
+        {% set franja = franjas[reserva.franja] %}
+        {% set mensaje %}Hola {{ reserva.nombre.split()[0] }}, te escribimos de Hilos & Arreglos por tu hora del {{ reserva.fecha|fecha_larga }} en la {{ franja[0]|lower }} ({{ franja[1] }}). ¿Te la confirmamos?{% endset %}
+        <li class="reserva reserva--{{ reserva.estado }}" id="reserva-{{ reserva.id }}">
+          <div class="reserva__cuando">
+            <strong>{{ reserva.fecha|fecha_corta }}</strong>
+            <span>{{ franja[0] }} · {{ franja[1] }}</span>
+          </div>
+          <div class="reserva__texto">
+            <p class="reserva__quien">
+              <strong>{{ reserva.nombre }}</strong>
+              <span class="etiqueta-servicio chip--{{ reserva.servicio }}">{{ servicios[reserva.servicio] }}</span>
+            </p>
+            <p class="reserva__detalle">{{ reserva.detalle }}</p>
+            <p class="reserva__contacto">
+              {{ reserva.telefono|telefono }}
+              {% if reserva.correo %} · <a href="mailto:{{ reserva.correo }}">{{ reserva.correo }}</a>{% endif %}
+            </p>
+          </div>
+          <div class="reserva__acciones">
+            <span class="estado estado--{{ reserva.estado }}">{{ estados[reserva.estado] }}</span>
+            <a class="boton boton--chico boton--whatsapp" target="_blank" rel="noopener"
+               href="https://wa.me/{{ reserva.telefono }}?text={{ mensaje|trim|urlencode }}">WhatsApp</a>
+            {% if reserva.estado in avance %}
+              <form method="post" action="{{ url_for('reserva_estado', id_reserva=reserva.id) }}">
+                <input type="hidden" name="csrf" value="{{ token_csrf() }}">
+                <button class="boton boton--claro boton--chico" name="estado" value="{{ avance[reserva.estado][0] }}">
+                  {{ avance[reserva.estado][1] }}
+                </button>
+              </form>
+            {% endif %}
+            <form method="post" action="{{ url_for('reserva_borrar', id_reserva=reserva.id) }}"
+                  data-confirmar="¿Borrar la reserva de {{ reserva.nombre }}? No se puede deshacer.">
+              <input type="hidden" name="csrf" value="{{ token_csrf() }}">
+              <button class="icono" type="submit" title="Borrar" aria-label="Borrar la reserva de {{ reserva.nombre }}">✕</button>
+            </form>
+          </div>
+        </li>
+      {% endfor %}
+    </ol>
+  {% else %}
+    <p class="bloque__vacio">Todavía no llegan reservas. Aparecerán aquí apenas alguien pida hora desde la página.</p>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/admin.js') }}" defer></script>
+{% endblock %}

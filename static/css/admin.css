@@ -33,6 +33,7 @@
 .admin__marca span { color: var(--suave); font-weight: 400; }
 .admin__menu { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 .admin__menu a { color: var(--texto); font-size: .95rem; }
+.admin__menu a[aria-current="page"] { font-weight: 700; text-decoration-thickness: 2px; }
 .admin__menu form { margin: 0; }
 
 .admin__contenido { max-width: 1080px; margin: 0 auto; padding: 32px 16px 80px; }
@@ -170,7 +171,54 @@
 .icono:hover:not(:disabled) { background: var(--lino); }
 .icono:disabled { opacity: .35; cursor: default; }
 
+/* ---------- Reservas ---------- */
+
+.lista-reservas { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+/* El borde izquierdo marca el estado: mostaza nueva, azul confirmada, verde lista */
+.reserva {
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: start;
+  padding: 14px 16px;
+  border: 1px solid #e3d6bd;
+  border-left: 5px solid var(--mostaza);
+  border-radius: 8px;
+  background: #fffdf8;
+  scroll-margin-top: 24px;
+}
+.reserva--confirmada { border-left-color: var(--azul); }
+.reserva--lista { border-left-color: #6b8f4e; background: #fbf9f3; }
+.reserva:target { border-color: var(--azul); }
+.reserva__cuando strong { display: block; font-family: "Fraunces", Georgia, serif; font-weight: 600; font-size: 1.1rem; }
+.reserva__cuando span { color: var(--suave); font-size: .86rem; }
+.reserva__texto p { margin: 0 0 4px; }
+.reserva__quien strong { margin-right: 6px; font-family: "Fraunces", Georgia, serif; font-weight: 600; font-size: 1.05rem; }
+.reserva__contacto { color: var(--suave); font-size: .9rem; }
+.reserva__contacto a { color: inherit; }
+.reserva__acciones { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; max-width: 430px; }
+.reserva__acciones form { margin: 0; }
+
+/* Usa los colores de los parches de servicio (.chip--basta, etc. en estilos.css) */
+.etiqueta-servicio {
+  display: inline-block;
+  padding: 1px 10px;
+  border: 1.5px dashed var(--c, var(--texto));
+  border-radius: 999px;
+  background: var(--c-fondo, #fff);
+  font-size: .8rem;
+  vertical-align: 2px;
+}
+.estado { padding: 3px 10px; border-radius: 999px; font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.estado--nueva { background: #f6e5ba; color: #6b4e17; }
+.estado--confirmada { background: #dfe7f1; color: #24426b; }
+.estado--lista { background: #e1ecd8; color: #3d5a2a; }
+.boton--whatsapp { background: #1e7e45; border-color: #1e7e45; color: #fff; }
+.boton--whatsapp:hover { background: #17663a; border-color: #17663a; }
+
 @media (max-width: 720px) {
+  .reserva { grid-template-columns: 1fr; gap: 8px; }
+  .reserva__acciones { justify-content: flex-start; max-width: none; }
   .trabajo-form { grid-template-columns: 1fr; }
   .trabajo-form__vista { max-width: 300px; }
   .fotos { grid-template-columns: 1fr; }
