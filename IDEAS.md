@@ -76,8 +76,8 @@ opinión en las del otro.
     `templates/admin/base_admin.html`, `static/css/estilos.css` y `static/css/admin.css`.
 - **Para más adelante:** avisarle al taller por correo cuando llegue una reserva, y dejar que el
   cliente adjunte una foto de la prenda.
-- **Estado:** 💡 Propuesta (en la rama `propuesta/color-y-ropa`)
-- **Opinión de Max:** _(pendiente)_
+- **Estado:** 🚀 Hecha
+- **Opinión de Max:** aprobada, está buena. La juntó con `main` el 8 de octubre.
 
 **Lo que ve el cliente:**
 
