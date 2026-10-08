@@ -1,6 +1,6 @@
 :root {
-  --fondo: #fbf8f2;
-  --lino: #efe7d8;
+  --fondo: #f7f0e3;
+  --lino: #eadfca;
   --madera: #d9bc8f;
   --madera-osc: #a8814f;
   --texto: #3a2f25;
@@ -8,17 +8,41 @@
   --azul: #3d6aa3;
   --mostaza: #d6a53c;
   --rojo: #b2452f;
+  --crudo: #efe6d2;
   --pilar: 112px;
+
+  /* Trama de lino, muy suave, para que el fondo se sienta tela */
+  --trama:
+    repeating-linear-gradient(0deg, rgba(90, 55, 20, .045) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, rgba(90, 55, 20, .035) 0 1px, transparent 1px 4px);
+  /* Ambiente de color: luces de las lanas de los pilares sobre lino tostado */
+  --ambiente:
+    var(--trama),
+    radial-gradient(ellipse 45% 75% at 6% 20%, rgba(214, 165, 60, .5), transparent 70%),
+    radial-gradient(ellipse 40% 70% at 52% 105%, rgba(178, 69, 47, .26), transparent 70%),
+    radial-gradient(ellipse 45% 75% at 96% 15%, rgba(61, 106, 163, .3), transparent 70%),
+    #f2e2c2;
+  /* Faja tejida como la de los pilares: bordes rojos, franjas mostaza y zigzag azul */
+  --faja-alto: 26px;
+  --faja:
+    repeating-linear-gradient(90deg, rgba(40, 22, 8, .1) 0 1px, transparent 1px 3px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='12'%3E%3Cpath d='M0 9 6.5 3 13 9 19.5 3 26 9' fill='none' stroke='%233d6aa3' stroke-width='2.4'/%3E%3C/svg%3E") 0 50% / 26px 12px repeat-x,
+    linear-gradient(180deg, var(--rojo) 0 5px, var(--crudo) 5px 7px, var(--mostaza) 7px 9px, var(--crudo) 9px calc(100% - 9px),
+      var(--mostaza) calc(100% - 9px) calc(100% - 7px), var(--crudo) calc(100% - 7px) calc(100% - 5px), var(--rojo) calc(100% - 5px));
+  /* Pespunte a lo ancho, 12px sobre el borde de abajo */
+  --pespunte: linear-gradient(90deg, rgba(90, 55, 20, .45) 0 9px, transparent 9px 15px) 0 calc(100% - 12px) / 15px 2px repeat-x;
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  background: var(--fondo);
+  background: var(--trama), var(--fondo);
   color: var(--texto);
   font-family: "DM Sans", system-ui, sans-serif;
   line-height: 1.6;
+  /* Las franjas de color van de borde a borde (100vw): sin esto aparecería scroll horizontal */
+  overflow-x: clip;
 }
 
 /* ---------- Marco: pilares ---------- */
@@ -177,30 +201,52 @@ body {
 
 /* ---------- Inicio ---------- */
 
-/* Foto del taller detrás de la tabla, el menú y la portada, de pilar a pilar */
-.escena--foto { position: relative; isolation: isolate; }
-.escena--foto::before {
+/* Escena de pilar a pilar detrás de la tabla, el menú y la portada: en inicio es la
+   foto del taller y en las demás páginas, el ambiente de color. La cierra una faja tejida. */
+.escena--foto,
+.escena--color { position: relative; z-index: 1; isolation: isolate; padding-bottom: var(--faja-alto); }
+.escena--foto::before,
+.escena--color::before,
+.escena--foto::after,
+.escena--color::after {
   content: "";
   position: absolute;
   z-index: -1;
-  top: calc(var(--arriba) * -1);
-  bottom: 0;
   left: calc((var(--pilar) / 2 + var(--margen)) * -1);
   right: calc((var(--pilar) / 2 + var(--margen)) * -1);
+}
+.escena--foto::before,
+.escena--color::before { top: calc(var(--arriba) * -1); bottom: 0; }
+.escena--foto::after,
+.escena--color::after {
+  bottom: 0;
+  height: var(--faja-alto);
+  background: var(--faja);
+  box-shadow: 0 4px 10px rgba(59, 42, 24, .25);
+}
+.escena--foto::before {
   background:
-    linear-gradient(180deg, transparent 75%, var(--fondo)),
+    linear-gradient(180deg, transparent 78%, rgba(59, 42, 24, .14)),
     radial-gradient(ellipse 60% 55% at 50% 62%, rgba(251, 248, 242, .88), rgba(251, 248, 242, .5)),
     url("../img/portada.webp") center 40% / cover no-repeat;
 }
-.escena--foto .cabecera { border-bottom: 0; }
+.escena--color::before { background: var(--ambiente); }
+.escena--foto .cabecera,
+.escena--color .cabecera { border-bottom: 0; }
 .escena--foto .bajada { color: var(--texto); }
+
+/* Sobre el ambiente de color los textos suaves se oscurecen, para que se lean bien */
+.escena--color,
+.recorrido,
+.seccion--color { --suave: #5f5141; }
+.escena--color .antetitulo { color: #7a4e2c; }
 
 /* En pantallas anchas el texto va a la izquierda y la foto se ve más a la derecha */
 @media (min-width: 721px) {
   /* Velo fuerte detrás del texto que se aclara hacia la derecha */
   .escena--foto::before {
     background:
-      linear-gradient(180deg, transparent 75%, var(--fondo)),
+      linear-gradient(180deg, transparent 78%, rgba(59, 42, 24, .14)),
       linear-gradient(90deg, rgba(251, 248, 242, .94) 8%, rgba(251, 248, 242, .82) 38%, rgba(251, 248, 242, .2) 68%, rgba(251, 248, 242, .12)),
       url("../img/portada.webp") center 40% / cover no-repeat;
   }
@@ -244,7 +290,17 @@ body {
 .boton--claro:hover { background: var(--lino); border-color: var(--texto); }
 
 /* Recorrido: un hilo cosido que pasa por un botón de madera en cada etapa */
-.recorrido { position: relative; padding: 64px 0 88px; }
+.recorrido { position: relative; isolation: isolate; padding: 64px 0 88px; }
+
+/* Franjas de color de borde a borde, con un pespunte abajo */
+.recorrido::before,
+.seccion--color::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0 calc(50% - 50vw);
+  background: var(--pespunte), var(--ambiente);
+}
 .recorrido__titulo {
   margin: 0 0 40px;
   text-align: center;
@@ -351,15 +407,34 @@ body {
   padding: 0;
   list-style: none;
 }
+/* Cada servicio es un parche cosido del color de una lana */
 .servicios li {
   padding: 6px 16px;
-  border: 1px solid #e3d8c4;
+  border: 1.5px dashed var(--azul);
   border-radius: 999px;
-  background: #fff;
+  background: #dfe7f1;
   font-size: .9rem;
 }
+.servicios li:nth-child(2) { border-color: #b8892b; background: #f6e5ba; }
+.servicios li:nth-child(3) { border-color: var(--rojo); background: #f3d6ca; }
+.servicios li:nth-child(4) { border-color: #8a5a36; background: var(--crudo); }
 
 .seccion { padding: 40px 0 64px; border-top: 1px solid var(--lino); scroll-margin-top: 24px; }
+/* La faja ya separa la portada de la primera sección */
+.escena--color + main > .seccion:first-child { border-top: 0; }
+
+/* Sección con el ambiente de color y una faja arriba */
+.seccion--color { position: relative; isolation: isolate; border-top: 0; padding: 64px 0 80px; }
+.seccion--color::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: calc(50% - 50vw);
+  right: calc(50% - 50vw);
+  height: var(--faja-alto);
+  background: var(--faja);
+}
 .seccion__titulo {
   margin: 0 0 6px;
   font-family: "Fraunces", Georgia, serif;
@@ -492,7 +567,7 @@ body {
 }
 
 @media (max-width: 720px) {
-  :root { --pilar: 18px; }
+  :root { --pilar: 18px; --faja-alto: 20px; }
   .sitio { --margen: 14px; --arriba: 150px; }
   .techo { --tabla-top: 18px; --tabla-alto: 58px; }
   .tabla__amarra { width: 14px; }
