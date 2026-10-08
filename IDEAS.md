@@ -93,6 +93,21 @@ opinión en las del otro.
 
 ![Agenda en celular](ideas/agenda-celular.jpeg)
 
+### 4. En Arreglos, primero la agenda y después "Antes y después"
+
+- **Página:** Arreglos
+- **Qué cambiar:** "Agenda tu arreglo" sube justo debajo de la portada y "Antes y después" queda
+  al final. La frase de la portada cambia a "Pide tu hora aquí abajo y mira algunos de nuestros
+  trabajos". Entre la portada y la agenda queda una sola faja tejida, y el pespunte de la agenda
+  separa la galería.
+- **Por qué:** pedir hora es lo principal de la página; así el cliente no tiene que bajar por
+  toda la galería para encontrar el formulario. Los trabajos quedan como respaldo más abajo.
+- **Archivos:** `templates/arreglos.html` (solo se movió la sección) y `static/css/estilos.css`.
+- **Estado:** 💡 Propuesta (en la rama `propuesta/color-y-ropa`)
+- **Opinión de Max:** _(pendiente)_
+
+![Orden de la página de arreglos: hoy y propuesta](ideas/orden-arreglos.jpeg)
+
 ---
 
 ## Ideas de Max
