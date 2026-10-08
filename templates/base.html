@@ -46,10 +46,6 @@
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
       document.querySelector(".techo__hilos").pauseAnimations();
     }
-    // Al bajar por la página, los objetos colgantes se recogen hacia la tabla
-    const compactar = () => document.body.classList.toggle("compacto", scrollY > 40);
-    addEventListener("scroll", compactar, { passive: true });
-    compactar();
     // Los pilares 3D solo se cargan en pantallas anchas; en celular queda el SVG
     if (!matchMedia("(max-width: 720px)").matches) {
       import("{{ url_for('static', filename='js/pilares3d.js') }}");

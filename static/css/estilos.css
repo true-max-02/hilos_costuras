@@ -52,7 +52,7 @@ body {
 .techo {
   --tabla-top: 24px;
   --tabla-alto: 82px;
-  position: fixed;
+  position: absolute;
   top: 0;
   left: calc(var(--pilar) / 2);
   right: calc(var(--pilar) / 2);
@@ -112,16 +112,14 @@ body {
 .tabla__amarra--izq { left: calc(var(--pilar) * .385); }
 .tabla__amarra--der { right: calc(var(--pilar) * .385); }
 
-/* Objetos que cuelgan de la tabla; al bajar por la página se recogen */
+/* Objetos que cuelgan de la tabla */
 .techo__colgantes {
   position: absolute;
   top: calc(var(--tabla-top) + var(--tabla-alto));
   left: 0;
   right: 0;
   z-index: -1;
-  transition: transform .45s ease, opacity .35s ease;
 }
-.compacto .techo__colgantes { transform: translateY(-70px); opacity: 0; }
 
 .colgante { position: absolute; top: 0; width: 0; }
 .colgante__pendulo {
@@ -257,7 +255,7 @@ body {
   font-size: .9rem;
 }
 
-.seccion { padding: 40px 0 64px; border-top: 1px solid var(--lino); scroll-margin-top: 130px; }
+.seccion { padding: 40px 0 64px; border-top: 1px solid var(--lino); scroll-margin-top: 24px; }
 .seccion__titulo {
   margin: 0 0 6px;
   font-family: "Fraunces", Georgia, serif;
@@ -399,6 +397,6 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .colgante__pendulo { animation: none; }
-  .techo__colgantes, .cortina__tela { transition: none; }
+  .cortina__tela { transition: none; }
   .menu a::after, .boton { transition: none; }
 }
