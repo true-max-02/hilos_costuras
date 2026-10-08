@@ -103,8 +103,8 @@ opinión en las del otro.
 - **Por qué:** pedir hora es lo principal de la página; así el cliente no tiene que bajar por
   toda la galería para encontrar el formulario. Los trabajos quedan como respaldo más abajo.
 - **Archivos:** `templates/arreglos.html` (solo se movió la sección) y `static/css/estilos.css`.
-- **Estado:** 💡 Propuesta (en la rama `propuesta/color-y-ropa`)
-- **Opinión de Max:** _(pendiente)_
+- **Estado:** 🚀 Hecha
+- **Opinión de Max:** le pareció bien (se lo dijo a Camilo). Pasó a `main` el 8 de octubre.
 
 ![Orden de la página de arreglos: hoy y propuesta](ideas/orden-arreglos.jpeg)
 
