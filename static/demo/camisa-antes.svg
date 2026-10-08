@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000"><defs>
+  <pattern id="lino" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M0 5h10M5 0v10" stroke="#e0d4bf" stroke-width="1.2"/></pattern>
+  <pattern id="sarga" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><path d="M0 0v12" stroke="#ffffff" stroke-opacity=".07" stroke-width="5"/></pattern>
+  <filter id="sombra" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#5a4128" flood-opacity=".28"/></filter>
+</defs>
+<rect width="800" height="1000" fill="#efe7d8"/><rect width="800" height="1000" fill="url(#lino)"/><g filter="url(#sombra)"><path d="M300 140 Q400 170 500 140 L650 200 L725 712 L640 726 L590 380 L604 920 L196 920 L210 380 L160 726 L75 712 L150 200 Z" fill="#8a9a6b"/></g>
+<path d="M75 712 L160 726 L166 680 L82 666 Z M725 712 L640 726 L634 680 L718 666 Z" fill="#6f7f55"/>
+<path d="M330 140 L400 212 L470 140 L440 118 L400 162 L360 118 Z" fill="#a3b283"/>
+<path d="M400 212 V920" stroke="#6f7f55" stroke-width="3"/>
+<g fill="#efe6d2"><circle cx="412" cy="280" r="7"/><circle cx="412" cy="400" r="7"/><circle cx="412" cy="520" r="7"/><circle cx="412" cy="640" r="7"/><circle cx="412" cy="760" r="7"/></g>
+<rect x="300" y="300" width="70" height="60" rx="4" fill="none" stroke="#6f7f55" stroke-width="2.5" stroke-dasharray="7 5"/><g stroke="#5f6e48" stroke-width="2.5" fill="none" opacity=".7"><path d="M240 560 Q262 640 236 720"/><path d="M560 560 Q538 640 564 720"/></g></svg>

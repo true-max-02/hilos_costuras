@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block contenido %}
+<section class="portada">
+  <p class="antetitulo">Taller de diseño y arreglos</p>
+  <h1>Diseñamos, cosemos y arreglamos tu ropa</h1>
+  <p class="bajada">
+    Creamos prendas propias y también le damos nueva vida a la tuya: ajustes,
+    bastas, cierres y reparaciones. Todo se hace aquí mismo, entre hilos y madera.
+  </p>
+  <div class="acciones">
+    <a class="boton" href="#">Ver colección</a>
+    <a class="boton boton--claro" href="{{ url_for('arreglos') }}#agendar">Pedir un arreglo</a>
+  </div>
+</section>
+
+<section class="pasos">
+  <article class="paso">
+    <span class="paso__hilo paso__hilo--azul"></span>
+    <h2>Diseño</h2>
+    <p>Bocetos propios, pensados para durar y no para una temporada.</p>
+  </article>
+  <article class="paso">
+    <span class="paso__hilo paso__hilo--mostaza"></span>
+    <h2>Confección</h2>
+    <p>Cortamos y cosemos cada pieza en el local, en series cortas de lino y algodón.</p>
+  </article>
+  <article class="paso">
+    <span class="paso__hilo paso__hilo--rojo"></span>
+    <h2>Arreglos</h2>
+    <p>Ajustes, bastas, cierres y reparaciones para que tu ropa dure más.</p>
+  </article>
+</section>
+{% endblock %}

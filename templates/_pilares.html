@@ -1,0 +1,152 @@
+{# Marco del sitio: dos pilares de madera envueltos en lana y un techo de hilos.
+   Los pilares se dibujan en 3D (static/js/pilares3d.js); el SVG de aquí queda
+   de respaldo para celulares y navegadores sin WebGL.
+   Se importa "with context" porque usa `lanas` y `pilares` de main.py. #}
+
+{% macro pilar(lado) %}
+  {% set datos = pilares[lado] %}
+  {% set inclinacion = datos.inclinacion %}
+  <div class="pilar pilar--{{ lado }}" data-lado="{{ lado }}" aria-hidden="true">
+    <svg viewBox="0 0 100 1400" preserveAspectRatio="xMidYMin slice">
+      <defs>
+        <linearGradient id="madera-{{ lado }}" x1="0" x2="1">
+          <stop offset="0" stop-color="#cfae7e"/>
+          <stop offset=".35" stop-color="#ecd5ad"/>
+          <stop offset=".7" stop-color="#ddbf91"/>
+          <stop offset="1" stop-color="#bf9a68"/>
+        </linearGradient>
+        <linearGradient id="volumen-{{ lado }}" x1="0" x2="1">
+          <stop offset="0" stop-color="#3b2a18" stop-opacity=".38"/>
+          <stop offset=".3" stop-color="#ffffff" stop-opacity=".14"/>
+          <stop offset=".55" stop-color="#ffffff" stop-opacity="0"/>
+          <stop offset="1" stop-color="#3b2a18" stop-opacity=".42"/>
+        </linearGradient>
+      </defs>
+
+      <rect width="100" height="1400" fill="url(#madera-{{ lado }})"/>
+      <g stroke="#a98455" stroke-opacity=".18" fill="none">
+        <path d="M22 0 C24 400 18 900 23 1400"/>
+        <path d="M47 0 C45 500 50 1000 46 1400"/>
+        <path d="M71 0 C74 350 68 950 72 1400"/>
+      </g>
+
+      <g fill="none" stroke-linecap="round" stroke-width="2.7">
+        {% for y0, n, sep, lana in datos.bandas %}
+          {% for i in range(n) %}
+            {% set y = y0 + i * sep %}
+            <path d="M-2 {{ y }} Q50 {{ y + inclinacion / 2 + 3 }} 102 {{ y + inclinacion }}"
+                  stroke="{{ lanas[lana][1] if i % 3 == 0 else lanas[lana][0] }}"/>
+          {% endfor %}
+        {% endfor %}
+      </g>
+
+      {% for y, lana in datos.ovillos %}
+        {% set cx = 30 if loop.index0 % 2 == 0 else 70 %}
+        <circle cx="{{ cx }}" cy="{{ y }}" r="17" fill="{{ lanas[lana][0] }}"/>
+        <g fill="none" stroke="{{ lanas[lana][1] }}" stroke-width="1.6" stroke-linecap="round">
+          <path d="M{{ cx - 15 }} {{ y - 6 }} Q{{ cx }} {{ y - 16 }} {{ cx + 14 }} {{ y - 8 }}"/>
+          <path d="M{{ cx - 16 }} {{ y + 1 }} Q{{ cx }} {{ y - 9 }} {{ cx + 16 }} {{ y }}"/>
+          <path d="M{{ cx - 14 }} {{ y + 8 }} Q{{ cx }} {{ y - 2 }} {{ cx + 15 }} {{ y + 7 }}"/>
+        </g>
+      {% endfor %}
+
+      <rect width="100" height="1400" fill="url(#volumen-{{ lado }})"/>
+    </svg>
+  </div>
+{% endmacro %}
+
+
+{# ---------- Objetos de taller que cuelgan del hilo ---------- #}
+
+{% macro objeto(tipo, lana) %}
+  {% set c = lanas[lana][0] if lana else "" %}
+  {% set s = lanas[lana][1] if lana else "" %}
+  <svg class="colgante__obj" viewBox="0 0 40 44" aria-hidden="true">
+    {% if tipo == "carrete" %}
+      <rect x="8" y="2" width="24" height="6" rx="2" fill="#c9a26b"/>
+      <rect x="11" y="8" width="18" height="24" fill="{{ c }}"/>
+      <path d="M11 12h18M11 16h18M11 20h18M11 24h18M11 28h18" stroke="{{ s }}" stroke-width="1"/>
+      <rect x="8" y="32" width="24" height="6" rx="2" fill="#c9a26b"/>
+    {% elif tipo == "boton" %}
+      <circle cx="20" cy="16" r="13" fill="{{ c }}"/>
+      <circle cx="20" cy="16" r="9" fill="none" stroke="{{ s }}" stroke-width="1.5"/>
+      <g fill="{{ s }}"><circle cx="17" cy="13" r="1.6"/><circle cx="23" cy="13" r="1.6"/><circle cx="17" cy="19" r="1.6"/><circle cx="23" cy="19" r="1.6"/></g>
+    {% elif tipo == "tijeras" %}
+      <g fill="none" stroke-linecap="round">
+        <circle cx="14" cy="9" r="6" stroke="{{ c }}" stroke-width="3"/>
+        <circle cx="26" cy="9" r="6" stroke="{{ c }}" stroke-width="3"/>
+        <path d="M17 14 L25 40 M23 14 L15 40" stroke="#8d9299" stroke-width="3"/>
+      </g>
+      <circle cx="20" cy="24" r="1.6" fill="#5d6268"/>
+    {% elif tipo == "cinta" %}
+      <rect x="16" y="20" width="8" height="22" rx="1" fill="#f0d27a"/>
+      <path d="M16 25h3M16 29h4M16 33h3M16 37h4" stroke="#7a5c1c" stroke-width="1"/>
+      <circle cx="20" cy="15" r="13" fill="{{ c }}"/>
+      <circle cx="20" cy="15" r="5" fill="#fbf8f2" stroke="{{ s }}" stroke-width="1.5"/>
+    {% elif tipo == "dedal" %}
+      <path d="M11 38 L13 12 Q20 2 27 12 L29 38 Z" fill="#b9bec4"/>
+      <g fill="#8d9299"><circle cx="17" cy="18" r="1.2"/><circle cx="23" cy="18" r="1.2"/><circle cx="20" cy="24" r="1.2"/><circle cx="16" cy="29" r="1.2"/><circle cx="24" cy="29" r="1.2"/></g>
+      <rect x="10" y="35" width="20" height="4" rx="1.5" fill="#9aa0a7"/>
+    {% endif %}
+  </svg>
+{% endmacro %}
+
+
+{% macro techo() %}
+  {# Hebras sobre la tabla: (y izquierda, x control, y control, y derecha, cuánto se mece, color, grosor, segundos) #}
+  {% set hebras = [
+    (6, 500, 30, 6, 3, lanas.azul[0], 2.4, 6),
+    (4, 500, 34, 10, 3, lanas.mostaza[0], 2.2, 7),
+    (10, 480, 26, 4, 2, lanas.rojo[0], 2.0, 5.5),
+    (7, 520, 36, 7, 3, "#c8b38c", 1.6, 8),
+    (9, 500, 24, 12, 2, lanas.azul[1], 1.4, 6.5),
+    (12, 450, 32, 5, 3, lanas.mostaza[1], 1.3, 7.5),
+    (3, 550, 28, 9, 2, "#d06a52", 1.6, 5),
+    (8, 500, 38, 8, 3, "#b9a27a", 1.2, 9),
+  ] %}
+  {# Objetos que cuelgan bajo la tabla: (posición de 0 a 1, tipo, lana, largo de la cuerda, segundos, solo en pantallas anchas) #}
+  {% set objetos = [
+    (0.10, "carrete", "azul", 18, 4.2, false),
+    (0.21, "boton", "mostaza", 10, 3.6, true),
+    (0.32, "tijeras", "rojo", 22, 4.8, false),
+    (0.43, "carrete", "mostaza", 12, 3.9, true),
+    (0.57, "cinta", "mostaza", 16, 4.4, true),
+    (0.68, "boton", "rojo", 10, 3.4, false),
+    (0.79, "carrete", "rojo", 22, 4.6, true),
+    (0.90, "dedal", none, 14, 3.8, false),
+  ] %}
+
+  <div class="techo">
+    <svg class="techo__hilos" viewBox="0 0 1000 40" preserveAspectRatio="none" aria-hidden="true">
+      <g fill="none" stroke-linecap="round">
+        {% for ya, cx, cy, yb, mov, color, grosor, seg in hebras %}
+          {% set quieto = "M0 %s Q%s %s 1000 %s"|format(ya, cx, cy, yb) %}
+          {% set abajo = "M0 %s Q%s %s 1000 %s"|format(ya, cx, cy + mov, yb) %}
+          <path d="{{ quieto }}" stroke="{{ color }}" stroke-width="{{ grosor }}" vector-effect="non-scaling-stroke">
+            <animate attributeName="d" dur="{{ seg }}s" repeatCount="indefinite"
+                     values="{{ quieto }};{{ abajo }};{{ quieto }}"
+                     calcMode="spline" keyTimes="0;.5;1" keySplines=".45 0 .55 1;.45 0 .55 1"/>
+          </path>
+        {% endfor %}
+      </g>
+    </svg>
+
+    {# Tabla de pilar a pilar; sus puntas quedan detrás de los pilares #}
+    <a class="tabla" href="{{ url_for('inicio') }}">
+      <span class="tabla__amarra tabla__amarra--izq" aria-hidden="true"></span>
+      <span class="tabla__texto">Arreglos de ropa</span>
+      <span class="tabla__amarra tabla__amarra--der" aria-hidden="true"></span>
+    </a>
+
+    <div class="techo__colgantes">
+      {% for t, tipo, lana, largo, seg, ancha in objetos %}
+        <div class="colgante{{ ' colgante--ancha' if ancha }}" style="left: {{ t * 100 }}%">
+          <div class="colgante__pendulo" style="--largo: {{ largo }}px; --dur: {{ seg }}s; --retraso: -{{ loop.index * 0.7 }}s">
+            <span class="colgante__cuerda"></span>
+            {{ objeto(tipo, lana) }}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endmacro %}

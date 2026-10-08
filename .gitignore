@@ -1,0 +1,13 @@
+# Datos y secretos: nunca se suben
+.env
+*.db
+static/uploads/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Notas locales
+CLAUDE.md
