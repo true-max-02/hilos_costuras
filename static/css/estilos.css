@@ -394,6 +394,9 @@ body {
   font-size: .85rem;
   text-align: center;
 }
+.pie p { margin: 0 0 8px; }
+.pie__acceso { color: var(--suave); }
+.pie__acceso:hover { color: var(--texto); }
 
 /* ---------- Página de arreglos ---------- */
 
