@@ -2,7 +2,9 @@
 
 {% block titulo %}Arreglos · Hilos & Arreglos{% endblock %}
 
-{% block contenido %}
+{% block escena_clase %} escena--color{% endblock %}
+
+{% block portada %}
 <section class="portada portada--corta">
   <p class="antetitulo">Taller de arreglos</p>
   <h1>Tu ropa, como nueva</h1>
@@ -14,7 +16,9 @@
     <li>Bastas</li><li>Cierres</li><li>Ajustes</li><li>Reparaciones</li>
   </ul>
 </section>
+{% endblock %}
 
+{% block contenido %}
 <section class="seccion">
   <h2 class="seccion__titulo">Antes y después</h2>
   <p class="seccion__ayuda">Corre la cortina para ver la prenda arreglada.</p>
@@ -47,7 +51,7 @@
   </div>
 </section>
 
-<section class="seccion" id="agendar">
+<section class="seccion seccion--color" id="agendar">
   <h2 class="seccion__titulo">Agenda tu arreglo</h2>
   <p class="seccion__ayuda">Muy pronto podrás reservar tu hora desde aquí.</p>
 </section>
