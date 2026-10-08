@@ -21,6 +21,19 @@ CREATE TABLE IF NOT EXISTS trabajos (
     foto_despues TEXT NOT NULL,
     orden INTEGER NOT NULL DEFAULT 0
 );
+
+CREATE TABLE IF NOT EXISTS prendas (
+    id INTEGER PRIMARY KEY,
+    nombre TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,      -- para la dirección de la ficha
+    descripcion TEXT NOT NULL DEFAULT '',
+    precio INTEGER NOT NULL CHECK (precio >= 0),   -- pesos chilenos
+    foto TEXT NOT NULL,             -- ruta dentro de static/
+    tallas TEXT NOT NULL DEFAULT '',   -- separadas por coma: "S,M,L"
+    stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
+    visible INTEGER NOT NULL DEFAULT 1,
+    orden INTEGER NOT NULL DEFAULT 0   -- la primera es la destacada
+);
 """
 
 # Trabajos de muestra para la demo; se cambian por fotos reales desde el panel
@@ -35,6 +48,19 @@ TRABAJOS_DEMO = [
      "demo/camisa-antes.svg", "demo/camisa-despues.svg"),
 ]
 
+# Prendas de muestra (fotos provisorias hechas con IA); se cambian desde el panel
+PRENDAS_DEMO = [
+    ("Chaqueta de retazos", "chaqueta-de-retazos",
+     "Mezclilla con parches de otras telas, cosidos a la vista con hilo crudo.",
+     54990, "demo/coleccion/chaqueta-retazos.webp", "S,M,L", 3),
+    ("Chaleco tejido", "chaleco-tejido",
+     "Tejido a mano en lana cruda, con ribetes azules y botones de madera.",
+     39990, "demo/coleccion/chaleco-tejido.webp", "S,M,L", 4),
+    ("Falda terracota", "falda-terracota",
+     "Lino lavado, corte en A y largo midi, con bolsillos a los lados.",
+     34990, "demo/coleccion/falda-terracota.webp", "XS,S,M,L", 5),
+]
+
 
 def preparar_bd():
     with closing(sqlite3.connect(BD)) as conexion, conexion:
@@ -43,6 +69,12 @@ def preparar_bd():
             conexion.executemany(
                 "INSERT INTO trabajos (titulo, detalle, foto_antes, foto_despues, orden) VALUES (?, ?, ?, ?, ?)",
                 [(*trabajo, orden) for orden, trabajo in enumerate(TRABAJOS_DEMO)],
+            )
+        if not conexion.execute("SELECT 1 FROM prendas LIMIT 1").fetchone():
+            conexion.executemany(
+                "INSERT INTO prendas (nombre, slug, descripcion, precio, foto, tallas, stock, orden)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                [(*prenda, orden) for orden, prenda in enumerate(PRENDAS_DEMO)],
             )
 
 
@@ -146,6 +178,12 @@ def datos_de_marca():
     return {"lanas": LANAS, "pilares": PILARES}
 
 
+@app.template_filter("pesos")
+def pesos(valor):
+    """34990 -> $34.990"""
+    return "$" + f"{valor:,}".replace(",", ".")
+
+
 @app.route("/")
 def inicio():
     return render_template("inicio.html")
@@ -155,6 +193,15 @@ def inicio():
 def arreglos():
     trabajos = bd().execute("SELECT * FROM trabajos ORDER BY orden, id").fetchall()
     return render_template("arreglos.html", trabajos=trabajos)
+
+
+
+@app.route("/coleccion")
+def coleccion():
+    prendas = bd().execute(
+        "SELECT * FROM prendas WHERE visible = 1 ORDER BY orden, id"
+    ).fetchall()
+    return render_template("coleccion.html", prendas=prendas)
 
 
 if __name__ == "__main__":

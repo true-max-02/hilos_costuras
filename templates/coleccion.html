@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block titulo %}Colección · Hilos & Arreglos{% endblock %}
+
+{% block contenido %}
+<section class="vitrina" aria-labelledby="vitrina-titulo">
+  <header class="vitrina__cabeza">
+    <h1 id="vitrina-titulo">Colección</h1>
+    <p>Prendas diseñadas y cosidas en el taller, en series cortas. Cuando se acaban, no se repiten igual.</p>
+  </header>
+
+  {% if prendas %}
+    {# La primera prenda va destacada: ocupa dos columnas y dos filas #}
+    <ul class="vitrina__grilla">
+      {% for prenda in prendas %}
+        <li class="prenda{% if loop.first %} prenda--destacada{% endif %}{% if prenda.stock == 0 %} prenda--agotada{% endif %}">
+          <div class="prenda__foto">
+            <img src="{{ url_for('static', filename=prenda.foto) }}" alt="{{ prenda.nombre }}"
+                 loading="{{ 'eager' if loop.first else 'lazy' }}">
+            {% if prenda.stock == 0 %}<span class="prenda__etiqueta">Agotada</span>{% endif %}
+          </div>
+          <div class="prenda__datos">
+            <h2>{{ prenda.nombre }}</h2>
+            <p class="prenda__precio">{{ prenda.precio|pesos }}</p>
+          </div>
+          <p class="prenda__detalle">{{ prenda.descripcion }}</p>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="vitrina__vacia">
+      <p class="vitrina__vacia-titulo">Estamos cosiendo la próxima colección</p>
+      <p class="vitrina__vacia-texto">Mientras tanto, podemos arreglar o ajustar la ropa que ya tienes.</p>
+      <a class="boton" href="{{ url_for('arreglos') }}">Ver arreglos</a>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}
